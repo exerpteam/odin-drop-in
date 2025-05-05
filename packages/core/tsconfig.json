@@ -1,26 +1,33 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "allowUnreachableCode": false,
-    "declaration": false,
-    "experimentalDecorators": true,
-    "lib": [
-      "dom",
-      "es2022"
-    ],
-    "moduleResolution": "bundler",
-    "module": "esnext",
-    "target": "es2022",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "h.Fragment"
+    // --- Stencil-specific overrides ---
+    "allowSyntheticDefaultImports": true, // 📝 Keep Stencil's preference
+    "experimentalDecorators": true,       // 📝 Required by Stencil
+    "module": "ESNext",                   // 📝 Stencil requires ES modules
+    "target": "ES2022",                   // 📝 Keep consistent with base or use Stencil's default if different
+    "lib": ["dom", "esnext"],             // 📝 Stencil needs DOM and modern ES features
+    "jsx": "react",                       // 📝 Stencil uses JSX
+    "jsxFactory": "h",                    // 📝 Stencil's JSX factory
+    "jsxFragmentFactory": "Fragment",     // 📝 Stencil's JSX fragment factory
+    "moduleResolution": "node",         // 📝 Trying 'node' instead of 'bundler' to potentially fix Puppeteer type issue. 'node16' or 'nodenext' might also work.
+    "noEmit": true,                       // 📝 Stencil handles emit, TS checks only
+    "isolatedModules": false,             // 📝 Stencil processes modules together, override base setting
+
+    // --- Stencil-specific removals/adjustments (from base) ---
+    // "declaration": false, // Let Stencil handle declarations via output targets
+    // "noUnusedLocals": true, // Keep strictness
+    // "noUnusedParameters": true, // Keep strictness
+    "skipLibCheck": true // 📝 Often useful with complex dependencies like Puppeteer
   },
   "include": [
-    "src"
+    "src" // 📝 Point to the source directory
+    // 📝 Automatically includes .ts, .tsx, .d.ts - ensure components.d.ts is generated/found
   ],
   "exclude": [
-    "node_modules"
+    "node_modules", // 📝 Exclude dependencies
+    "dist",         // 📝 Exclude build output
+    "loader",       // 📝 Exclude loader output
+    "www"           // 📝 Exclude www output if generated
   ]
 }

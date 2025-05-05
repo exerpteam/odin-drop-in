@@ -30,7 +30,7 @@ npx create-turbo@latest
 
 ### State
 
-The foundational package (`core`) for the Stencil Web Components has been added to the monorepo under `packages/core`. This package will house the actual web component implementations.
+The foundational package (`core`) for the Stencil Web Components has been added to the monorepo under `packages/core`. This package will house the actual web component implementations. The package name in `package.json` is currently "core", and it includes the default Stencil starter component (`my-component`).
 
 ### Commands Executed & Process
 
@@ -58,13 +58,12 @@ cd ../..
 ### Key Files and Directories Added/Modified
 
 -   **`packages/core/` Directory:**
-    -   `package.json`: Defines the `core` package (`@stencil/core` dependency). The name is currently just "core".
-    -   `stencil.config.ts`: Stencil build configuration.
-    -   `tsconfig.json`: TypeScript configuration for Stencil.
+    -   `package.json`: Defines the `core` package (`@stencil/core` dependency).
+    -   `stencil.config.ts`: Initial Stencil build configuration.
+    -   `tsconfig.json`: Initial TypeScript configuration for Stencil.
     -   `src/`: Source code for Stencil components (e.g., `components/my-component/`).
     -   Standard Stencil starter files (`.gitignore`, `readme.md`, etc.).
 -   **Root `pnpm-workspace.yaml`:** Implicitly includes `packages/core` via the `packages/*` glob.
--   📝 **Note:** A build error related to `puppeteer` types was observed in `packages/core/.turbo/turbo-build.log` during initial builds. This needs investigation.
 
 ## 3. Facade Package Setup (Commit e63b3df3)
 
@@ -86,14 +85,7 @@ cd odin-dropin
 pnpm init # (or manually create package.json with name: @exerp/odin-dropin)
 
 # Create tsconfig.json (manually, extending base)
-# Example content:
-# {
-#  "extends": "../../tsconfig.base.json",
-#  "compilerOptions": { ... },
-#  "include": ["src"],
-#  "exclude": ["node_modules", "dist"]
-# }
-touch tsconfig.json
+touch tsconfig.json # (Content added extending base)
 
 # Create src directory and placeholder index.ts
 mkdir src
@@ -103,11 +95,7 @@ touch src/index.ts
 cd ../..
 
 # Create root tsconfig.base.json (manually)
-# Example content:
-# {
-#  "compilerOptions": { ... }
-# }
-touch tsconfig.base.json
+touch tsconfig.base.json # (Content added with base TS options)
 
 # Optional: Run install again from the root
 # pnpm install
@@ -122,7 +110,7 @@ touch tsconfig.base.json
 -   **Root `tsconfig.base.json`:** Created to hold shared TypeScript compiler options.
 -   **Root `pnpm-workspace.yaml`:** Implicitly includes `packages/odin-dropin` via the `packages/*` glob.
 
-## 4. Boilerplate Cleanup & Root Configuration Update (Commit 67c7094d)
+## 4. Boilerplate Cleanup & Root Configuration Update (Commit a7ca27aa)
 
 ### State
 
@@ -141,10 +129,10 @@ rm -rf packages/eslint-config
 rm -rf packages/typescript-config
 
 # Manually edit root configuration files:
-# - pnpm-workspace.yaml: Comment out or remove `apps/*` if no apps exist yet.
-# - package.json: Remove devDependencies related to removed packages (eslint, ts-config) and simplify scripts (e.g., removing lint/test scripts related to examples).
-# - turbo.json: Update tasks, potentially removing pipelines related to removed apps/packages.
-# - README.md: Add initial project documentation.
+# - pnpm-workspace.yaml: Updated paths (commented out apps/*).
+# - package.json: Removed devDependencies related to removed packages (eslint, ts-config), simplified scripts.
+# - turbo.json: Updated tasks, removing pipelines related to removed apps/packages.
+# - README.md: Updated with MVP requirement details.
 
 # Optional: Run install again from root to update lockfile
 # pnpm install
@@ -154,29 +142,60 @@ rm -rf packages/typescript-config
 
 -   **Removed:** `apps/docs`, `apps/web`, `packages/ui`, `packages/eslint-config`, `packages/typescript-config`.
 -   **Modified:**
-    -   `pnpm-workspace.yaml`: Updated paths (likely just `packages/*`).
+    -   `pnpm-workspace.yaml`: Updated paths (only `packages/*` active).
     -   `package.json`: Simplified dependencies and scripts.
     -   `turbo.json`: Adjusted task configurations.
--   **Added:**
-    -   `README.md`: Initial project README added at the root.
+    -   `README.md`: Content updated to match `6-DropIn-MVP-Implementation.md`.
+
+## 5. Core Package Configuration & Initial Build Fix Attempt (Commit 91a7120c)
+
+### State
+
+The Stencil component package (`packages/core`) has been configured. The namespace is set, output targets (`dist`, `dist-custom-elements`) are defined, and unnecessary ones (`www`, `docs-readme`) have been removed. The `tsconfig.json` for the core package has been updated to extend the root `tsconfig.base.json` and includes specific settings required by Stencil. Notably, `moduleResolution` was set to `"node"` in an attempt to resolve a TypeScript build error related to Puppeteer types (`Cannot find module 'chromium-bidi/protocol/protocol.js'`) observed during the initial build (`packages/core/.turbo/turbo-build.log`). `skipLibCheck` was also enabled. The root `turbo.json` build task outputs were updated to include Stencil-specific artifacts (`loader/**`, `.stencil/**`).
+
+### Commands Executed & Process
+
+```bash
+# Manually edit configuration files:
+# - packages/core/stencil.config.ts: Adjusted namespace, outputTargets.
+# - packages/core/tsconfig.json: Extended base, added Stencil options, set moduleResolution="node", skipLibCheck=true.
+# - turbo.json: Updated build.outputs.
+
+# Run build (likely triggered implicitly or explicitly)
+# pnpm turbo build # This would show if the tsconfig changes fixed the Puppeteer error
+```
+
+### Key Files and Directories Added/Modified
+
+-   **Modified:**
+    -   `packages/core/stencil.config.ts`:
+        -   Set `namespace: 'exerp-odin-dropin-core'`.
+        -   Configured `outputTargets` for `dist` and `dist-custom-elements`.
+        -   Removed `docs-readme` and `www` output targets.
+        -   Set `testing.browserHeadless = 'shell'`.
+    -   `packages/core/tsconfig.json`:
+        -   Added `"extends": "../../tsconfig.base.json"`.
+        -   Set/overrode compiler options for Stencil (e.g., `jsx`, `jsxFactory`, `experimentalDecorators`).
+        -   Set `moduleResolution: "node"` (attempting to fix Puppeteer type error).
+        -   Set `skipLibCheck: true`.
+    -   `turbo.json`:
+        -   Added `loader/**` and `.stencil/**` to `tasks.build.outputs`.
 
 ## Overall Current State
 
 We have a streamlined Turborepo monorepo managed by pnpm, specifically set up for the ODIN Drop-in component:
 1.  **Root configuration files:** `package.json`, `turbo.json`, `tsconfig.base.json`, `pnpm-workspace.yaml`, `.gitignore`, etc., are configured for the current structure.
-2.  **Core Package:** `packages/core` contains the initialized Stencil project (with the default component `my-component`).
+2.  **Core Package:** `packages/core` contains the initialized and configured Stencil project (namespace `exerp-odin-dropin-core`, build outputs defined). It still contains the default component `my-component`. The Puppeteer build error has been addressed in `tsconfig.json`, but verification is needed.
 3.  **Facade Package:** `packages/odin-dropin` contains the basic structure (`package.json`, `tsconfig.json`, `src/index.ts`) for the public API facade, named `@exerp/odin-dropin`.
 4.  **No example apps/packages:** The initial boilerplate examples have been removed.
 5.  A root `README.md` provides initial project context (copied from the MVP requirements).
 
 ## Next Steps (Based on MVP Requirements - `6-DropIn-MVP-Implementation.md`)
 
-1.  **Configure `core`:**
-    *   Adjust `packages/core/stencil.config.ts` (e.g., `namespace`, output targets if needed, potentially `shadow: false` for the main component).
+1.  **Verify Build & Refactor `core`:**
+    *   Run `pnpm turbo build` to confirm the Puppeteer/TypeScript build issue in `packages/core` is resolved by the `tsconfig.json` changes. If not, further investigate (`moduleResolution: node16/nodenext`, type versions, etc.). 📝
     *   Rename/refactor the default `my-component` in `packages/core/src/components/` to reflect the actual ODIN drop-in component (e.g., `odin-cc-form`).
-    *   Investigate and fix the `puppeteer`/TypeScript build issue noted in `packages/core/.turbo/turbo-build.log`. 📝
 2.  **Configure Build for Facade:** Set up Vite within `packages/odin-dropin` for bundling (ESM, UMD, CJS), dependency handling (`core`), CSS extraction (from Stencil), and `.d.ts` generation.
 3.  **Implement Core Logic:** Start implementing the MVP functionality (CC form rendering using `OdinPay.js`, handling props like `odinPublicToken`, `isSingleUse`, setting up callbacks) within the Stencil component in `packages/core`.
 4.  **Implement Facade Logic:** Implement the public `OdinDropin` class/functions in `packages/odin-dropin/src/index.ts` to load/initialize the Stencil component from `core` and manage the public API (`initialize`, `mount`, callbacks).
 5.  **Create Demo App:** Initialize an `apps/demo` package for local testing, consuming `@exerp/odin-dropin`.
-
