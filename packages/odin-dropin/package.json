@@ -31,7 +31,8 @@
   "devDependencies": {
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-dts": "^3.9.1"
+    "vite-plugin-dts": "^3.9.1",
+    "@exerp/odin-dropin-core": "workspace:*"
   },
   "dependencies": {}
 }
