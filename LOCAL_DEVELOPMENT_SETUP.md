@@ -87,6 +87,60 @@ Then you can install normally:
 # pnpm add @exerp/odin-dropin@latest
 ```
 
+## Iterating on Changes and Testing
+
+When you make changes to the ODIN Drop-in source code within the `odin-dropin-workspace`, you'll need to rebuild the relevant package(s) to see those changes reflected in your testing environments.
+
+### Testing in an External Host Project (e.g., `webapp-standard`)
+
+This is the primary workflow when using `pnpm add /path/to/package` (local linking) with an external application like `webapp-standard/frontend` that uses `yarn serve` (or a similar Vite/Webpack dev server).
+
+1.  **Make Code Changes:**
+    *   Modify files in `odin-dropin-workspace/packages/core/src/...` for the Stencil web components.
+    *   Or, modify files in `odin-dropin-workspace/packages/odin-dropin/src/...` for the facade logic.
+
+2.  **Rebuild the Drop-in Package:**
+    *   In your terminal, navigate to the root of the `odin-dropin-workspace`.
+    *   Run the build command:
+        ```bash
+        pnpm turbo build --filter @exerp/odin-dropin
+        ```
+    *   This command ensures that `@exerp/odin-dropin-core` (if changed and it's a dependency of the facade) and the `@exerp/odin-dropin` facade package are rebuilt. The updated `dist` folder in `packages/odin-dropin` will contain the latest changes.
+
+3.  **Refresh/Check the Host Application (`webapp-standard`):**
+    *   Your host application (`webapp-standard/frontend`), which you run with `yarn serve`, is symlinked to the `dist` output of your local `@exerp/odin-dropin` package.
+    *   The Vue CLI dev server (webpack) usually watches for changes in `node_modules` (including symlinked packages) and should automatically trigger a hot module replacement (HMR) or a full page reload.
+    *   If the browser doesn't update automatically, manually refresh the page in your browser where `webapp-standard` is running.
+
+4.  **Troubleshooting (If Changes Don't Appear in Host Application):**
+    *   **Hard Refresh:** Try a hard refresh in your browser (e.g., Ctrl+Shift+R or Cmd+Shift+R).
+    *   **Restart Host Dev Server:** Stop (`Ctrl+C`) and restart the `yarn serve` command in your `webapp-standard/frontend` project. Dev servers can sometimes be inconsistent with picking up updates from symlinked dependencies immediately.
+    *   **Verify Build Output:** Double-check the contents and timestamps of files in the `dist` folder within `odin-dropin-workspace/packages/odin-dropin` to ensure the build artifacts were indeed updated.
+    *   **Check Symlink:** Confirm that the symlink in `webapp-standard/frontend/node_modules/@exerp/odin-dropin` correctly points to your local `odin-dropin-workspace/packages/odin-dropin` directory.
+    *   **Cache:** In rare cases, aggressive caching by the browser or build tools might interfere. Clearing the browser cache or any build tool cache in the host project (e.g., `rm -rf node_modules/.cache` if webpack creates one) could be a last resort.
+
+### Testing Changes within the Monorepo
+
+You can also test changes more directly within the `odin-dropin-workspace`:
+
+*   **Testing with the Demo Application (`apps/demo`):**
+    1.  Make your changes in `packages/core/src/...` or `packages/odin-dropin/src/...`.
+    2.  Rebuild the facade: `pnpm turbo build --filter @exerp/odin-dropin`. (This ensures both `core` and `odin-dropin` are up-to-date).
+    3.  If the demo app is already running (via `pnpm dev --filter demo` from the workspace root), Vite's HMR should pick up the changes from the rebuilt workspace package. If not, a browser refresh or restarting the demo app's dev server might be needed.
+    4.  Refer to `QUICK_START.md` for instructions on running the demo app.
+
+*   **Testing Core Components in Isolation:**
+    1.  Make changes directly in `packages/core/src/...`.
+    2.  Run the Stencil development server from within the `packages/core` directory:
+        ```bash
+        cd packages/core
+        pnpm start
+        ```
+    3.  This will serve `packages/core/src/index.html` (usually at `http://localhost:3333`) and provide HMR for the Stencil components.
+    4.  Refer to `QUICK_START.md` for more details on isolated core component development.
+
+(Future consideration: We can explore setting up watch modes with Turborepo to automatically rebuild packages on changes, which could further streamline this workflow.)
+
 ## Publishing / Deployment
 
 **(TODO)**
