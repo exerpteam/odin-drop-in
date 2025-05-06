@@ -265,3 +265,45 @@ pnpm install
 -   **Root `pnpm-workspace.yaml`:** Updated to include `apps/*`.
 -   **Root `pnpm-lock.yaml`:** Updated with new dependencies and versions.
 -   **`packages/odin-dropin/package.json`:** Updated `vite` devDependency version to align with the demo app.
+
+## 8. Local Linking Test with External Project
+
+### State
+
+The `@exerp/odin-dropin` package has been successfully linked locally into an external project (`webapp-standard/frontend`) for testing purposes. A simple test function exported from the facade was imported and executed within the external Vue application, confirming the link is functional.
+
+### Commands Executed & Process
+
+```bash
+# 1. Build the facade package (from drop-in workspace root)
+pnpm turbo build --filter @exerp/odin-dropin
+
+# 2. Navigate to the external project's frontend directory
+cd /path/to/webapp-standard/frontend
+
+# 3. Link the local drop-in package using pnpm
+#    (Using absolute path for clarity)
+pnpm add /Users/majidlaissi/dev/exerp/odin-dropin-workspace/packages/odin-dropin
+
+# 4. Add a test export to the facade's src/index.ts (in drop-in workspace)
+#    Example: export function initializeOdinDropin() { ... }
+
+# 5. Rebuild the facade package again (from drop-in workspace root)
+pnpm turbo build --filter @exerp/odin-dropin
+
+# 6. Import and call the test function in the external Vue app
+#    Example in a Vue component:
+#    import { initializeOdinDropin } from '@exerp/odin-dropin';
+#    onMounted(() => { initializeOdinDropin(); });
+
+# 7. Run the external project's dev server and check console logs
+#    pnpm dev (or similar command in webapp-standard/frontend)
+```
+
+### Key Files and Directories Added/Modified
+
+-   **`packages/odin-dropin/src/index.ts`:** Added a basic exported function (`initializeOdinDropin`) for testing the import.
+-   **`packages/odin-dropin/dist/`:** Updated with the new build artifacts containing the exported function.
+-   **`/path/to/webapp-standard/frontend/package.json`:** Added `"@exerp/odin-dropin": "link:/path/to/.../packages/odin-dropin"` dependency.
+-   **`/path/to/webapp-standard/frontend/node_modules/`:** Symlink created for `@exerp/odin-dropin`.
+-   **`/path/to/webapp-standard/frontend/src/components/YourComponent.vue` (Example):** Modified to import and call the test function.
