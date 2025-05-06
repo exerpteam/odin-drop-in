@@ -339,3 +339,26 @@ pnpm start
     -   `packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.css`: Added initial styling.
     -   `packages/core/stencil.config.ts`: Re-added `www` output target with `indexHtml` configuration.
     -   `packages/core/src/index.html`: Content verified/updated for testing.
+
+## 10. Resolve Stencil Dev Server Component Discovery Issue (Commit <Your_Commit_Hash_Here>)
+
+### State
+
+A significant issue was identified where Stencil components within `packages/core` (e.g., `exerp-odin-cc-form`) would not render when using Stencil's integrated development server (`pnpm start` in `packages/core`). Symptoms included an empty `src/components.d.ts` for the `www` target, a `bootstrapLazy([])` call in the loader, and the component tag remaining unhydrated in the browser. This issue was reproducible in a minimal standalone Stencil project. The `dist` builds consumed by the demo app worked correctly.
+
+### Investigation and Resolution
+
+Extensive investigation, including comparative version testing (which initially suggested a regression in Stencil v4.30.0 that was later found to be a red herring for this specific cause) and minimal reproduction, led to the discovery of the root cause.
+
+The failure of Stencil's dev server (`www` output target) to discover and compile components was due to the `compilerOptions.noEmit: true` setting in `packages/core/tsconfig.json`. While Stencil manages its own JavaScript emission, this setting appeared to interfere with the component discovery or processing pipeline specifically for the `www` target in development/watch mode.
+
+**Resolution:**
+- Modified `packages/core/tsconfig.json`.
+- Changed `compilerOptions.noEmit` from `true` to `false` (or removed the line if `false` is the effective default).
+
+After this change, running `pnpm start` in `packages/core` successfully discovers and renders the Stencil components in the dev server environment (`http://localhost:3333/`).
+
+### Key Files and Directories Added/Modified
+
+-   **Modified:**
+    -   `packages/core/tsconfig.json`: Updated `compilerOptions.noEmit` to `false`.

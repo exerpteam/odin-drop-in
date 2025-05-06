@@ -10,7 +10,7 @@
     "module": "ESNext",         // Stencil typically uses ESNext modules
     "moduleResolution": "node", // Revert to 'node', worked for Puppeteer, common in Stencil examples
     "target": "ES2022",         // Modern JS target
-    "noEmit": true,             // Stencil handles the JavaScript emission
+    "noEmit": false,             // Stencil handles the JavaScript emission
 
     // --- Strictness & Checks (Keep these for code quality) ---
     "strict": true,

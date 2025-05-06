@@ -6,19 +6,32 @@
  */
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
+    interface ExerpOdinCcForm {
+    }
 }
 declare global {
+    interface HTMLExerpOdinCcFormElement extends Components.ExerpOdinCcForm, HTMLStencilElement {
+    }
+    var HTMLExerpOdinCcFormElement: {
+        prototype: HTMLExerpOdinCcFormElement;
+        new (): HTMLExerpOdinCcFormElement;
+    };
     interface HTMLElementTagNameMap {
+        "exerp-odin-cc-form": HTMLExerpOdinCcFormElement;
     }
 }
 declare namespace LocalJSX {
+    interface ExerpOdinCcForm {
+    }
     interface IntrinsicElements {
+        "exerp-odin-cc-form": ExerpOdinCcForm;
     }
 }
 export { LocalJSX as JSX };
 declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
+            "exerp-odin-cc-form": LocalJSX.ExerpOdinCcForm & JSXBase.HTMLAttributes<HTMLExerpOdinCcFormElement>;
         }
     }
 }
