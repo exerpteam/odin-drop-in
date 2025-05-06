@@ -29,8 +29,8 @@
   "author": "Exerp",
   "license": "UNLICENSED",
   "devDependencies": {
-    "typescript": "^5.8.2",
-    "vite": "^5.4.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
     "vite-plugin-dts": "^3.9.1"
   },
   "dependencies": {}

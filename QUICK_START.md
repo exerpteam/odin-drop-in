@@ -12,7 +12,7 @@ Then, install all project dependencies using pnpm:
 pnpm install
 ```
 
-This command installs dependencies for all packages within the workspace (`@exerp/odin-dropin-core`, `@exerp/odin-dropin`, etc.).
+This command installs dependencies for all packages within the workspace (`@exerp/odin-dropin-core`, `@exerp/odin-dropin`, `demo`, etc.).
 
 ## 2. Build
 
@@ -22,11 +22,20 @@ To build all packages (`core` components and the `odin-dropin` facade library) f
 pnpm turbo build
 ```
 
-This uses Turborepo to efficiently build the packages in the correct order. Build artifacts will typically be placed in the `dist` folder within each package (`packages/core/dist`, `packages/odin-dropin/dist`).
+This uses Turborepo to efficiently build the packages in the correct order. Build artifacts will typically be placed in the `dist` folder within each package (`packages/core/dist`, `packages/odin-dropin/dist`). The demo app also has a build command, but it's typically used for deployment previews rather than library development.
 
 ## 3. Development (Local Demo)
 
-*(Instructions to be added once the demo application is set up)*
+To run the local Vue demonstration application (`apps/demo`) which allows you to interactively test the `@exerp/odin-dropin` component:
+
+```bash
+# Run this from the root directory
+pnpm dev --filter demo
+```
+
+This command uses Turborepo to execute the `dev` script defined in `apps/demo/package.json` (which typically runs `vite`). Vite will start a development server and provide a URL (usually `http://localhost:5173` or similar) to open in your browser.
+
+The demo app will hot-reload as you make changes to the `@exerp/odin-dropin` facade or the `@exerp/odin-dropin-core` components (after rebuilding them if necessary - Turborepo's watch mode can help here, but we'll configure that later if needed).
 
 ## 4. Testing
 
@@ -34,11 +43,30 @@ This uses Turborepo to efficiently build the packages in the correct order. Buil
 
 ## 5. Cleaning Build Artifacts
 
-To remove all `dist`, `.turbo`, and `node_modules` folders:
+To remove build artifacts (`dist`, `.turbo`, `.stencil`, `loader`) and `node_modules` from all packages, first define the `clean` task in `turbo.json`:
 
-```bash
-pnpm turbo clean # (We need to define this task in turbo.json)
-rm -rf node_modules
+**Add this to `turbo.json` inside the `tasks` object:**
+
+```jsonc
+// In turbo.json
+"clean": {
+  "cache": false
+}
 ```
 
-*(Note: We will add the `clean` task definition to `turbo.json` later)*
+Then, you can run the following commands from the root directory:
+
+```bash
+# Execute the clean script defined in package.jsons (needs to be added)
+pnpm turbo clean
+
+# Manually remove root node_modules (Turbo doesn't manage this)
+rm -rf node_modules
+
+# Optional: Manually remove node_modules from specific packages if needed (usually not required with pnpm)
+# rm -rf packages/core/node_modules
+# rm -rf packages/odin-dropin/node_modules
+# rm -rf apps/demo/node_modules
+```
+
+*(Note: We still need to add a "clean" script to each package's `package.json` that removes its specific build artifacts, e.g., `rm -rf dist .stencil loader`)*

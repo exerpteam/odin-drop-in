@@ -222,3 +222,46 @@ We have a streamlined Turborepo monorepo managed by pnpm, specifically set up fo
 3.  **Facade Package:** `packages/odin-dropin` contains the structure (`package.json`, `tsconfig.json`, `src/index.ts`) and Vite build configuration (`vite.config.ts`) for the public API facade (`@exerp/odin-dropin`). Build is successful and produces `dist` artifacts.
 4.  **No example apps/packages:** The initial boilerplate examples have been removed.
 5.  A root `README.md` provides initial project context (copied from the MVP requirements).
+
+## 7. Demo Application Setup
+
+### State
+
+A basic Vue 3 + TypeScript demonstration application has been added to the monorepo under `apps/demo`. This application is intended for local development and testing of the `@exerp/odin-dropin` package. It includes a basic UI structure to input an ODIN public token, mount the drop-in, and display results or errors.
+
+### Commands Executed & Process
+
+```bash
+# Create the apps directory (from root)
+mkdir apps
+
+# Create the Vue + TS demo app using Vite (from root)
+# Followed prompts: Project name=demo, Framework=vue, Variant=vue-ts
+pnpm create vite apps/demo
+
+# Update pnpm-workspace.yaml to include apps/* (manual edit)
+
+# Add the facade package as a workspace dependency to the demo app (from root)
+pnpm --filter demo add @exerp/odin-dropin@workspace:*
+
+# Align Vite versions across packages (manual edit in packages/odin-dropin/package.json)
+# Example: Changed "vite": "^5.4.1" to "vite": "^6.3.5"
+
+# Install/update dependencies (from root)
+pnpm install
+
+# Update root turbo.json dev task if needed (manual edit)
+
+# Implement basic App.vue structure (manual edit in apps/demo/src/App.vue)
+```
+
+### Key Files and Directories Added/Modified
+
+-   **`apps/` Directory:** Created.
+-   **`apps/demo/` Directory:**
+    -   Initialized with Vite Vue TS boilerplate (`package.json`, `vite.config.ts`, `tsconfig.json`, `src/`, etc.).
+    -   `package.json`: Added `@exerp/odin-dropin` dependency, updated `vite` devDependency version.
+    -   `src/App.vue`: Updated with basic layout for testing the drop-in (input field, mount button, target div, result/error display areas).
+-   **Root `pnpm-workspace.yaml`:** Updated to include `apps/*`.
+-   **Root `pnpm-lock.yaml`:** Updated with new dependencies and versions.
+-   **`packages/odin-dropin/package.json`:** Updated `vite` devDependency version to align with the demo app.
