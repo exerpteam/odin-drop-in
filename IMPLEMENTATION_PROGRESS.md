@@ -30,7 +30,7 @@ npx create-turbo@latest
 
 ### State
 
-The foundational package (`core`) for the Stencil Web Components has been added to the monorepo under `packages/core`. This package will house the actual web component implementations. The package name in `package.json` is currently "core", and it includes the default Stencil starter component (`my-component`).
+The foundational package (`core`) for the Stencil Web Components has been added to the monorepo under `packages/core`. This package will house the actual web component implementations. The package name in `package.json` is currently "core", and it includes the default Stencil starter component (`exerp-odin-cc-form`).
 
 ### Commands Executed & Process
 
@@ -61,7 +61,7 @@ cd ../..
     -   `package.json`: Defines the `core` package (`@stencil/core` dependency).
     -   `stencil.config.ts`: Initial Stencil build configuration.
     -   `tsconfig.json`: Initial TypeScript configuration for Stencil.
-    -   `src/`: Source code for Stencil components (e.g., `components/my-component/`).
+    -   `src/`: Source code for Stencil components (e.g., `components/exerp-odin-cc-form/`).
     -   Standard Stencil starter files (`.gitignore`, `readme.md`, etc.).
 -   **Root `pnpm-workspace.yaml`:** Implicitly includes `packages/core` via the `packages/*` glob.
 
@@ -185,7 +185,7 @@ The Stencil component package (`packages/core`) has been configured. The namespa
 
 We have a streamlined Turborepo monorepo managed by pnpm, specifically set up for the ODIN Drop-in component:
 1.  **Root configuration files:** `package.json`, `turbo.json`, `tsconfig.base.json`, `pnpm-workspace.yaml`, `.gitignore`, etc., are configured for the current structure.
-2.  **Core Package:** `packages/core` contains the initialized and configured Stencil project (namespace `exerp-odin-dropin-core`, build outputs defined). It still contains the default component `my-component`. The Puppeteer build error has been addressed in `tsconfig.json`, but verification is needed.
+2.  **Core Package:** `packages/core` contains the initialized and configured Stencil project (namespace `exerp-odin-dropin-core`, build outputs defined). It still contains the default component `exerp-odin-cc-form`. The Puppeteer build error has been addressed in `tsconfig.json`, but verification is needed.
 3.  **Facade Package:** `packages/odin-dropin` contains the basic structure (`package.json`, `tsconfig.json`, `src/index.ts`) for the public API facade, named `@exerp/odin-dropin`.
 4.  **No example apps/packages:** The initial boilerplate examples have been removed.
 5.  A root `README.md` provides initial project context (copied from the MVP requirements).
@@ -194,7 +194,7 @@ We have a streamlined Turborepo monorepo managed by pnpm, specifically set up fo
 
 1.  **Verify Build & Refactor `core`:**
     *   Run `pnpm turbo build` to confirm the Puppeteer/TypeScript build issue in `packages/core` is resolved by the `tsconfig.json` changes. If not, further investigate (`moduleResolution: node16/nodenext`, type versions, etc.). 📝
-    *   Rename/refactor the default `my-component` in `packages/core/src/components/` to reflect the actual ODIN drop-in component (e.g., `odin-cc-form`).
+    *   Rename/refactor the default `exerp-odin-cc-form` in `packages/core/src/components/` to reflect the actual ODIN drop-in component (e.g., `odin-cc-form`).
 2.  **Configure Build for Facade:** Set up Vite within `packages/odin-dropin` for bundling (ESM, UMD, CJS), dependency handling (`core`), CSS extraction (from Stencil), and `.d.ts` generation.
 3.  **Implement Core Logic:** Start implementing the MVP functionality (CC form rendering using `OdinPay.js`, handling props like `odinPublicToken`, `isSingleUse`, setting up callbacks) within the Stencil component in `packages/core`.
 4.  **Implement Facade Logic:** Implement the public `OdinDropin` class/functions in `packages/odin-dropin/src/index.ts` to load/initialize the Stencil component from `core` and manage the public API (`initialize`, `mount`, callbacks).

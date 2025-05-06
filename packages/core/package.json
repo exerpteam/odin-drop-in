@@ -13,9 +13,9 @@
       "import": "./dist/core/core.esm.js",
       "require": "./dist/core/core.cjs.js"
     },
-    "./my-component": {
-      "import": "./dist/components/my-component.js",
-      "types": "./dist/components/my-component.d.ts"
+    "./exerp-odin-cc-form": {
+      "import": "./dist/components/exerp-odin-cc-form.js",
+      "types": "./dist/components/exerp-odin-cc-form.d.ts"
     },
     "./loader": {
       "import": "./loader/index.js",
