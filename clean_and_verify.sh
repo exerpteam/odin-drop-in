@@ -136,7 +136,7 @@ echo ""
 
 echo "🚀 Next Steps:"
 echo "To run the demo application (consumes built packages):"
-echo "  pnpm dev --filter demo"
+echo "  pnpm dev --filter @exerp/odin-dropin-demo"
 echo ""
 echo "To run the Stencil dev server for 'core' package (for isolated component testing):"
 echo "  cd packages/core && pnpm start"
