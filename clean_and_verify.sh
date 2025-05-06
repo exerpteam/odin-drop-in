@@ -6,7 +6,7 @@ set -e
 echo "🧹 Starting clean process..."
 
 # Navigate to the monorepo root (assuming the script is run from the root)
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 if [ "$PWD" != "$SCRIPT_DIR" ]; then
   echo "Please run this script from the monorepo root directory."
   exit 1
@@ -33,7 +33,7 @@ for pkg_path in packages/*; do
       rm -rf "$pkg_path/loader"
       rm -rf "$pkg_path/www"
       rm -rf "$pkg_path/.stencil"
-      rm -f  "$pkg_path/src/components.d.ts"
+      rm -f "$pkg_path/src/components.d.ts"
     fi
   fi
 done
@@ -44,7 +44,7 @@ for app_path in apps/*; do
     app_name=$(basename "$app_path")
     echo "🗑️ Removing generated files from apps/$app_name..."
     rm -rf "$app_path/node_modules"
-    rm -rf "$app_path/dist" 
+    rm -rf "$app_path/dist"
     rm -rf "$app_path/.turbo"
     # Add any other app-specific build artifacts if they exist
   fi
@@ -99,6 +99,19 @@ check_file_content() {
   return 0
 }
 
+#-- check output files
+echo "📦 Build artifacts are located in the following directories:"
+echo "ls -l packages/core/dist/exerp-odin-dropin-core/"
+ls -al packages/core/dist/exerp-odin-dropin-core/
+echo "ls -l packages/core/www/build/"
+ls -al packages/core/www/build/
+echo "ls -l packages/odin-dropin/dist/"
+ls -al packages/odin-dropin/dist/
+echo "ls -l packages/core/dist/components/"
+ls -al packages/core/dist/collection/components/
+echo "find . -name exerp-odin*"
+find . -name "exerp-odin*"
+
 # Verification checks
 verification_failed=0
 
@@ -122,7 +135,6 @@ check_file_content "packages/core/www/build/exerp-odin-dropin-core.esm.js" "exer
 # 4. packages/odin-dropin/dist/odin-dropin.es.js
 #    Facade ESM build output.
 check_file_content "packages/odin-dropin/dist/odin-dropin.es.js" "" "Facade ESM build" || verification_failed=1
-
 
 if [ "$verification_failed" -eq 0 ]; then
   echo "✅ All artifact verifications passed."
