@@ -307,3 +307,35 @@ pnpm turbo build --filter @exerp/odin-dropin
 -   **`/path/to/webapp-standard/frontend/package.json`:** Added `"@exerp/odin-dropin": "link:/path/to/.../packages/odin-dropin"` dependency.
 -   **`/path/to/webapp-standard/frontend/node_modules/`:** Symlink created for `@exerp/odin-dropin`.
 -   **`/path/to/webapp-standard/frontend/src/components/YourComponent.vue` (Example):** Modified to import and call the test function.
+
+## 9. Implement Basic Component Rendering & Fix Dev Server
+
+### State
+
+The core Stencil component (`packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx`) now renders the basic HTML structure (div containers for card info, postal code, and a placeholder submit button) required for `OdinPay.js` integration, instead of the initial placeholder content. Basic styling has been added (`exerp-odin-cc-form.css`).
+
+The Stencil dev server (`pnpm start` in `packages/core`) was initially showing a directory listing. This was resolved by re-adding a minimal `www` output target configuration to `packages/core/stencil.config.ts`, specifically setting `indexHtml: 'index.html'`, which allows the dev server to correctly serve the `packages/core/src/index.html` for isolated component testing.
+
+### Commands Executed & Process
+
+```bash
+# Manually edit component files:
+# - packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx (Updated render method)
+# - packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.css (Added basic styles)
+# - packages/core/src/index.html (Verified content)
+
+# Manually edit Stencil config to add 'www' target:
+# - packages/core/stencil.config.ts
+
+# Run Stencil dev server (from packages/core directory)
+pnpm start
+# (Verified component rendering correctly at http://localhost:3333)
+```
+
+### Key Files and Directories Added/Modified
+
+-   **Modified:**
+    -   `packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx`: Implemented basic render logic with container divs.
+    -   `packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.css`: Added initial styling.
+    -   `packages/core/stencil.config.ts`: Re-added `www` output target with `indexHtml` configuration.
+    -   `packages/core/src/index.html`: Content verified/updated for testing.

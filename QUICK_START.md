@@ -24,7 +24,22 @@ pnpm turbo build
 
 This uses Turborepo to efficiently build the packages in the correct order. Build artifacts will typically be placed in the `dist` folder within each package (`packages/core/dist`, `packages/odin-dropin/dist`). The demo app also has a build command, but it's typically used for deployment previews rather than library development.
 
-## 3. Development (Local Demo)
+## 3. Development (Isolated Core Component)
+
+To work on and visually test the core Stencil components (`packages/core`) in isolation, without running the full demo application:
+
+1.  Navigate to the core package directory:
+    ```bash
+    cd packages/core
+    ```
+2.  Run the Stencil development server:
+    ```bash
+    pnpm start
+    ```
+
+This will build the component in development mode, start a local server (usually at `http://localhost:3333`), and watch for changes. Open the provided URL in your browser to view the component as rendered by `packages/core/src/index.html`.
+
+## 4. Development (Full Demo App)
 
 To run the local Vue demonstration application (`apps/demo`) which allows you to interactively test the `@exerp/odin-dropin` component:
 
@@ -37,11 +52,11 @@ This command uses Turborepo to execute the `dev` script defined in `apps/demo/pa
 
 The demo app will hot-reload as you make changes to the `@exerp/odin-dropin` facade or the `@exerp/odin-dropin-core` components (after rebuilding them if necessary - Turborepo's watch mode can help here, but we'll configure that later if needed).
 
-## 4. Testing
+## 5. Testing
 
 *(Instructions to be added once tests are configured)*
 
-## 5. Cleaning Build Artifacts
+## 6. Cleaning Build Artifacts
 
 To remove build artifacts (`dist`, `.turbo`, `.stencil`, `loader`) and `node_modules` from all packages, first define the `clean` task in `turbo.json`:
 

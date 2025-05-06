@@ -31,9 +31,8 @@ The developer must perform the following setup tasks:
 - **Initialize Monorepo:** Set up a new monorepo using Turborepo and pnpm workspaces.
   - Follow Turborepo documentation for initialization (`npx create-turbo@latest`).
   - Ensure pnpm is configured as the package manager.
-- **Create Core Package:** Inside the monorepo's `packages/` directory, create the primary package for the Stencil components (e.g., `packages/core`).
-  - Use the Stencil CLI (`npm init stencil`) to initialize this package, selecting the "component" starter template.
-  - Configure `stencil.config.ts` for library output, targeting Web Components. Disable Shadow DOM initially (`shadow: false` for components needing external styling, though plan for potential future use or hybrid approaches).
+  - Configure `stencil.config.ts` for library output, targeting Web Components (`dist`, `dist-custom-elements`). Disable Shadow DOM initially (`shadow: false`).
+  - 🧑‍💻 **Note:** While the final library doesn't strictly need the `www` output target, adding a minimal `www` configuration (e.g., `{ type: 'www', indexHtml: 'index.html', serviceWorker: null }`) might be necessary in `stencil.config.ts` for the Stencil development server (`pnpm start` within the core package) to correctly serve the `src/index.html` test page during isolated component development.
 - **Create Facade Package:** Inside `packages/`, create the main publishable package (e.g., `packages/odin-dropin`).
   - This package will act as the public API facade. Its `src/index.ts` will import necessary elements from `@odin-payments/core` (or your chosen name) and expose the public `OdinDropin` class/functions.
   - Initialize `package.json` and `tsconfig.json`.
