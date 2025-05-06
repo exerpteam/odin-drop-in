@@ -126,7 +126,7 @@ You can also test changes more directly within the `odin-dropin-workspace`:
 *   **Testing with the Demo Application (`apps/demo`):**
     1.  Make your changes in `packages/core/src/...` or `packages/odin-dropin/src/...`.
     2.  Rebuild the facade: `pnpm turbo build --filter @exerp/odin-dropin`. (This ensures both `core` and `odin-dropin` are up-to-date).
-    3.  If the demo app is already running (via `pnpm dev --filter demo` from the workspace root), Vite's HMR should pick up the changes from the rebuilt workspace package. If not, a browser refresh or restarting the demo app's dev server might be needed.
+    3.  If the demo app is already running (via `pnpm dev --filter @exerp/odin-dropin-demo` from the workspace root), Vite's HMR should pick up the changes from the rebuilt workspace package. If not, a browser refresh or restarting the demo app's dev server might be needed.
     4.  Refer to `QUICK_START.md` for instructions on running the demo app.
 
 *   **Testing Core Components in Isolation:**
