@@ -176,26 +176,49 @@ The Stencil component package (`packages/core`) has been configured. The namespa
     -   `packages/core/tsconfig.json`:
         -   Added `"extends": "../../tsconfig.base.json"`.
         -   Set/overrode compiler options for Stencil (e.g., `jsx`, `jsxFactory`, `experimentalDecorators`).
-        -   Set `moduleResolution: "node"` (attempting to fix Puppeteer type error).
+        -   Set `moduleResolution: "node"`.
         -   Set `skipLibCheck: true`.
     -   `turbo.json`:
         -   Added `loader/**` and `.stencil/**` to `tasks.build.outputs`.
+
+## 6. Facade Package Build Configuration (Vite Setup)
+
+### State
+
+The facade package (`packages/odin-dropin`) has been configured with Vite to handle bundling for distribution. Vite is set up in library mode to produce ESM, UMD, and CJS outputs, along with TypeScript declaration files (`.d.ts`). The package's `package.json` has been updated with appropriate entry points (`main`, `module`, `types`, `exports`) and build scripts. A minor TypeScript configuration issue (`moduleResolution`) was resolved. The monorepo build (`pnpm turbo build`) now successfully builds both the `core` Stencil components and the `odin-dropin` facade package.
+
+### Commands Executed & Process
+
+```bash
+# Install Vite and dts plugin in the facade package (from root)
+pnpm --filter @exerp/odin-dropin add -D vite vite-plugin-dts typescript
+
+# Create Vite config file (manually)
+# - packages/odin-dropin/vite.config.ts
+
+# Manually edit configuration files:
+# - packages/odin-dropin/vite.config.ts: Added library mode config, dts plugin.
+# - packages/odin-dropin/package.json: Updated fields (main, module, types, exports, files, scripts), added devDependencies.
+# - packages/odin-dropin/tsconfig.json: Added moduleResolution: "node" to fix TS/VSCode error.
+
+# Run build to verify
+# pnpm turbo build
+```
+
+### Key Files and Directories Added/Modified
+
+-   **`packages/odin-dropin/` Directory:**
+    -   `vite.config.ts`: Added Vite configuration for library build.
+    -   `package.json`: Updated with build scripts, entry points, devDependencies (`vite`, `vite-plugin-dts`).
+    -   `tsconfig.json`: Added `moduleResolution: "node"`.
+    -   `dist/`: Created by Vite build (contains `.js`, `.js.map`, `types/`).
+-   **Root `pnpm-lock.yaml`:** Updated with new dependencies.
 
 ## Overall Current State
 
 We have a streamlined Turborepo monorepo managed by pnpm, specifically set up for the ODIN Drop-in component:
 1.  **Root configuration files:** `package.json`, `turbo.json`, `tsconfig.base.json`, `pnpm-workspace.yaml`, `.gitignore`, etc., are configured for the current structure.
-2.  **Core Package:** `packages/core` contains the initialized and configured Stencil project (namespace `exerp-odin-dropin-core`, build outputs defined). It still contains the default component `exerp-odin-cc-form`. The Puppeteer build error has been addressed in `tsconfig.json`, but verification is needed.
-3.  **Facade Package:** `packages/odin-dropin` contains the basic structure (`package.json`, `tsconfig.json`, `src/index.ts`) for the public API facade, named `@exerp/odin-dropin`.
+2.  **Core Package:** `packages/core` contains the initialized and configured Stencil project (namespace `exerp-odin-dropin-core`, build outputs defined). Build is successful. It still contains the default component `exerp-odin-cc-form`.
+3.  **Facade Package:** `packages/odin-dropin` contains the structure (`package.json`, `tsconfig.json`, `src/index.ts`) and Vite build configuration (`vite.config.ts`) for the public API facade (`@exerp/odin-dropin`). Build is successful and produces `dist` artifacts.
 4.  **No example apps/packages:** The initial boilerplate examples have been removed.
 5.  A root `README.md` provides initial project context (copied from the MVP requirements).
-
-## Next Steps (Based on MVP Requirements - `6-DropIn-MVP-Implementation.md`)
-
-1.  **Verify Build & Refactor `core`:**
-    *   Run `pnpm turbo build` to confirm the Puppeteer/TypeScript build issue in `packages/core` is resolved by the `tsconfig.json` changes. If not, further investigate (`moduleResolution: node16/nodenext`, type versions, etc.). 📝
-    *   Rename/refactor the default `exerp-odin-cc-form` in `packages/core/src/components/` to reflect the actual ODIN drop-in component (e.g., `odin-cc-form`).
-2.  **Configure Build for Facade:** Set up Vite within `packages/odin-dropin` for bundling (ESM, UMD, CJS), dependency handling (`core`), CSS extraction (from Stencil), and `.d.ts` generation.
-3.  **Implement Core Logic:** Start implementing the MVP functionality (CC form rendering using `OdinPay.js`, handling props like `odinPublicToken`, `isSingleUse`, setting up callbacks) within the Stencil component in `packages/core`.
-4.  **Implement Facade Logic:** Implement the public `OdinDropin` class/functions in `packages/odin-dropin/src/index.ts` to load/initialize the Stencil component from `core` and manage the public API (`initialize`, `mount`, callbacks).
-5.  **Create Demo App:** Initialize an `apps/demo` package for local testing, consuming `@exerp/odin-dropin`.

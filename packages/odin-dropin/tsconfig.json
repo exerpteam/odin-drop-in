@@ -1,11 +1,12 @@
 {
-    "extends": "../../tsconfig.base.json", // 📝 Assuming a base config exists at the root
-    "compilerOptions": {
-      "outDir": "dist", // 📝 Where TS emits files (though Vite might handle this)
-      "rootDir": "src", // 📝 Source files location
-      "declaration": true, // 📝 We want .d.ts files
-      "declarationDir": "dist/types" // 📝 Where .d.ts files go
-    },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "dist"]
-  }
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "declarationDir": "dist/types",
+    "moduleResolution": "node"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

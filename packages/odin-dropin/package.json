@@ -1,12 +1,37 @@
 {
   "name": "@exerp/odin-dropin",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Exerp ODIN Payment Drop-in Facade",
+  "main": "./dist/odin-dropin.cjs.js",
+  "module": "./dist/odin-dropin.es.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/odin-dropin.es.js",
+      "require": "./dist/odin-dropin.cjs.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": [
+    "odin",
+    "payment",
+    "dropin",
+    "exerp"
+  ],
+  "author": "Exerp",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vite": "^5.4.1",
+    "vite-plugin-dts": "^3.9.1"
+  },
+  "dependencies": {}
 }
