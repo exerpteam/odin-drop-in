@@ -242,7 +242,7 @@ pnpm create vite apps/demo
 # Update pnpm-workspace.yaml to include apps/* (manual edit)
 
 # Add the facade package as a workspace dependency to the demo app (from root)
-pnpm --filter demo add @exerp/odin-dropin@workspace:*
+pnpm --filter @exerp/odin-dropin-demo add @exerp/odin-dropin@workspace:*
 
 # Align Vite versions across packages (manual edit in packages/odin-dropin/package.json)
 # Example: Changed "vite": "^5.4.1" to "vite": "^6.3.5"

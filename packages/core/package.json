@@ -1,5 +1,5 @@
 {
-  "name": "core",
+  "name": "@exerp/odin-dropin-core",
   "version": "0.0.1",
   "description": "Stencil Component Starter",
   "main": "dist/index.cjs.js",
@@ -7,11 +7,11 @@
   "types": "dist/types/index.d.ts",
   "collection": "dist/collection/collection-manifest.json",
   "collection:main": "dist/collection/index.js",
-  "unpkg": "dist/core/core.esm.js",
+  "unpkg": "dist/exerp-odin-dropin-core/exerp-odin-dropin-core.esm.js",
   "exports": {
     ".": {
-      "import": "./dist/core/core.esm.js",
-      "require": "./dist/core/core.cjs.js"
+      "import": "./dist/exerp-odin-dropin-core/exerp-odin-dropin-core.esm.js",
+      "require": "./dist/exerp-odin-dropin-core/exerp-odin-dropin-core.cjs.js"
     },
     "./exerp-odin-cc-form": {
       "import": "./dist/components/exerp-odin-cc-form.js",
@@ -19,7 +19,7 @@
     },
     "./loader": {
       "import": "./loader/index.js",
-      "require": "./loader/index.cjs",
+      "require": "./loader/index.cjs.js",
       "types": "./loader/index.d.ts"
     }
   },

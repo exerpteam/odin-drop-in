@@ -12,7 +12,7 @@ Then, install all project dependencies using pnpm:
 pnpm install
 ```
 
-This command installs dependencies for all packages within the workspace (`@exerp/odin-dropin-core`, `@exerp/odin-dropin`, `demo`, etc.).
+This command installs dependencies for all packages within the workspace (`@exerp/odin-dropin-core`, `@exerp/odin-dropin`, `@exerp/odin-dropin-demo`, etc.).
 
 ## 2. Build
 
@@ -45,7 +45,7 @@ To run the local Vue demonstration application (`apps/demo`) which allows you to
 
 ```bash
 # Run this from the root directory
-pnpm dev --filter demo
+pnpm dev --filter @exerp/odin-dropin-demo
 ```
 
 This command uses Turborepo to execute the `dev` script defined in `apps/demo/package.json` (which typically runs `vite`). Vite will start a development server and provide a URL (usually `http://localhost:5173` or similar) to open in your browser.
