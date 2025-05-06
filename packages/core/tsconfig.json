@@ -1,33 +1,26 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // --- Stencil-specific overrides ---
-    "allowSyntheticDefaultImports": true, // 📝 Keep Stencil's preference
-    "experimentalDecorators": true,       // 📝 Required by Stencil
-    "module": "ESNext",                   // 📝 Stencil requires ES modules
-    "target": "ES2022",                   // 📝 Keep consistent with base or use Stencil's default if different
-    "lib": ["dom", "esnext"],             // 📝 Stencil needs DOM and modern ES features
-    "jsx": "react",                       // 📝 Stencil uses JSX
-    "jsxFactory": "h",                    // 📝 Stencil's JSX factory
-    "jsxFragmentFactory": "Fragment",     // 📝 Stencil's JSX fragment factory
-    "moduleResolution": "node",         // 📝 Trying 'node' instead of 'bundler' to potentially fix Puppeteer type issue. 'node16' or 'nodenext' might also work.
-    "noEmit": true,                       // 📝 Stencil handles emit, TS checks only
-    "isolatedModules": false,             // 📝 Stencil processes modules together, override base setting
+    // --- Core Stencil Settings ---
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
+    "lib": ["dom", "esnext"],
+    "module": "ESNext",         // Stencil typically uses ESNext modules
+    "moduleResolution": "node", // Revert to 'node', worked for Puppeteer, common in Stencil examples
+    "target": "ES2022",         // Modern JS target
+    "noEmit": true,             // Stencil handles the JavaScript emission
 
-    // --- Stencil-specific removals/adjustments (from base) ---
-    // "declaration": false, // Let Stencil handle declarations via output targets
-    // "noUnusedLocals": true, // Keep strictness
-    // "noUnusedParameters": true, // Keep strictness
-    "skipLibCheck": true // 📝 Often useful with complex dependencies like Puppeteer
+    // --- Strictness & Checks (Keep these for code quality) ---
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // --- Dependency Handling ---
+    "skipLibCheck": true        // Useful for complex dependencies like Puppeteer
   },
-  "include": [
-    "src" // 📝 Point to the source directory
-    // 📝 Automatically includes .ts, .tsx, .d.ts - ensure components.d.ts is generated/found
-  ],
-  "exclude": [
-    "node_modules", // 📝 Exclude dependencies
-    "dist",         // 📝 Exclude build output
-    "loader",       // 📝 Exclude loader output
-    "www"           // 📝 Exclude www output if generated
-  ]
+  "include": ["src"],           // Ensure all source files are included
+  "exclude": ["node_modules", "dist", "loader", "www"] // Exclude build outputs & deps
 }

@@ -10,20 +10,22 @@ export class MyComponent {
   /**
    * The first name
    */
-  @Prop() first: string;
+  @Prop() first!: string;
 
   /**
    * The middle name
    */
-  @Prop() middle: string;
+  @Prop() middle!: string;
 
   /**
    * The last name
    */
-  @Prop() last: string;
+  @Prop() last!: string;
 
   private getText(): string {
+    // 🧑‍💻 Temporarily return a simpler string instead of calling format
     return format(this.first, this.middle, this.last);
+    // return `${this.first || ''} ${this.middle || ''} ${this.last || ''}`.trim(); // Simple alternative
   }
 
   render() {

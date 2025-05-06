@@ -1,27 +1,27 @@
 {
-    "compilerOptions": {
-      /* Base Options: */
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "target": "ES2022", // Modern target
-      "allowJs": true,
-      "resolveJsonModule": true,
-      "moduleDetection": "force",
-      "isolatedModules": true,
-  
-      /* Strictness */
-      "strict": true,
-      "noUncheckedIndexedAccess": true,
-      "noImplicitAny": true, // Enforce typing
-  
-      /* If NOT transpiling with TypeScript: */
-      // "module": "preserve", // Let Vite/other bundlers handle module format
-      // "noEmit": true, // Let Vite/other bundlers handle emission
-  
-      /* If your bundler requires CommonJS: */
-      "module": "CommonJS", // Stencil/Vite might override this per-package
-  
-      "lib": ["dom", "dom.iterable", "esnext"] // Common libs for web dev
-    },
-    "exclude": ["node_modules", "dist"] // Exclude common folders from root-level checks
-  }
+  "compilerOptions": {
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+
+    /* Module System */
+    // "module": "CommonJS",
+    "module": "ESNext", // Set to ESNext for consistency with Stencil/Vite
+
+    /* If NOT transpiling with TypeScript (Less relevant now): */
+    // "noEmit": true,
+
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
+  "exclude": ["node_modules", "dist"]
+}
