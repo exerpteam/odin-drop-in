@@ -7,6 +7,7 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     interface ExerpOdinCcForm {
+        "odinPublicToken"?: string;
     }
 }
 declare global {
@@ -22,6 +23,7 @@ declare global {
 }
 declare namespace LocalJSX {
     interface ExerpOdinCcForm {
+        "odinPublicToken"?: string;
     }
     interface IntrinsicElements {
         "exerp-odin-cc-form": ExerpOdinCcForm;
