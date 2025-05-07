@@ -362,3 +362,45 @@ After this change, running `pnpm start` in `packages/core` successfully discover
 
 -   **Modified:**
     -   `packages/core/tsconfig.json`: Updated `compilerOptions.noEmit` to `false`.
+
+## 11. Facade Implementation & Initial Rendering in External Project
+
+### State
+The `@exerp/odin-dropin` facade now successfully instantiates and mounts the `exerp-odin-cc-form` web component from the `@exerp/odin-dropin-core` package. The component renders correctly within the `webapp-standard/frontend` project when linked locally. This was achieved by switching the facade to directly import the component from the `dist-custom-elements` output of the core package and resolving several TypeScript module and type resolution issues.
+
+### Key Changes & Resolutions:
+
+-   **Facade Uses Direct Component Import:**
+    -   `packages/odin-dropin/src/index.ts` was modified to import `@exerp/odin-dropin-core/exerp-odin-cc-form` directly. This utilizes the `dist-custom-elements` output from the core Stencil package, which is more robust for library consumption by external bundlers.
+    -   Removed the previous Stencil loader (`defineCustomElements`) logic from the facade.
+    -   The `OdinDropin` class's `mount` method is now synchronous as it no longer needs to manage loader initialization.
+
+-   **TypeScript Module Resolution for Exports:**
+    -   Encountered a Vite build error: `[commonjs--resolver] Missing "./dist/components/exerp-odin-cc-form.js" specifier in "@exerp/odin-dropin-core" package`.
+    -   **Resolution:** Changed the facade's import statement from the deep path `...@core/dist/components/exerp-odin-cc-form.js` to `...@core/exerp-odin-cc-form`, which correctly uses the `exports` map defined in `packages/core/package.json`.
+
+-   **TypeScript Type Resolution (`HTMLExerpOdinCcFormElement`):**
+    -   The `odin-dropin` facade build failed with `error TS2304: Cannot find name 'HTMLExerpOdinCcFormElement'`.
+    -   **Initial Attempts (Project References):** Added `composite: true` and `declarationMap: true` to `packages/core/tsconfig.json`, and `composite: true` with `"references": [{ "path": "../core" }]` to `packages/odin-dropin/tsconfig.json`. While good for monorepo structure, this alone didn't resolve the Vite build error for the facade.
+    -   **Error Insight:** A subsequent TypeScript error (`TS2307: Cannot find module ... or its corresponding type declarations. ... Consider updating to 'node16', 'nodenext', or 'bundler'`) indicated the `moduleResolution` setting was the culprit for type imports across packages respecting the `exports` map.
+    -   **Resolution (Module Resolution):**
+        -   Updated `tsconfig.base.json` to set `compilerOptions.moduleResolution: "bundler"`.
+        -   Removed overriding `moduleResolution: "node"` from `packages/core/tsconfig.json` and `packages/odin-dropin/tsconfig.json` to allow inheritance.
+    -   **Resolution (Explicit Type Import):** Added `import type { HTMLExerpOdinCcFormElement } from '@exerp/odin-dropin-core/exerp-odin-cc-form';` to `packages/odin-dropin/src/index.ts`. This, combined with the correct `moduleResolution`, allowed Vite/`vite-plugin-dts` to find the type.
+
+-   **DOM Ready for Mounting in Vue (`webapp-standard`):**
+    -   The `OdinDropInHost.vue` component in `webapp-standard` initially had an error where the drop-in tried to mount before its container `div` was rendered (due to `v-if`/`v-else` logic).
+    -   **Resolution:** Used `this.$nextTick()` in `OdinDropInHost.ts` to ensure the DOM is updated and the container element exists before calling the `mount` method.
+
+### Key Files Modified:
+-   **`packages/odin-dropin/src/index.ts`:** Updated to use direct component import and explicit type import. `OdinDropin.mount()` is now synchronous.
+-   **`packages/odin-dropin/tsconfig.json`:** Ensured it inherits `moduleResolution: "bundler"`.
+-   **`packages/core/tsconfig.json`:** Ensured it inherits `moduleResolution: "bundler"`, added `composite: true`, `declarationMap: true`.
+-   **`tsconfig.base.json`:** Set `moduleResolution: "bundler"`.
+-   **`webapp-standard/frontend/src/views/payment-providers/odin-drop-in/OdinDropInHost.ts`:** Used `nextTick` for mounting, reverted `await` on mount call.
+-   (Removed `vue.config.js` if it was added for `copy-webpack-plugin` in `webapp-standard` as it's no longer needed for this approach).
+
+### Current Status:
+-   The `exerp-odin-cc-form` component renders successfully in `webapp-standard`.
+-   The build process for both `core` and `odin-dropin` packages is successful.
+-   Type checking for the facade package is passing.

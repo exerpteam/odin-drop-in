@@ -16,7 +16,8 @@
 
     /* Module System */
     // "module": "CommonJS",
-    "module": "ESNext", // Set to ESNext for consistency with Stencil/Vite
+    // "module": "ESNext",
+    "moduleResolution": "bundler",
 
     /* If NOT transpiling with TypeScript (Less relevant now): */
     // "noEmit": true,

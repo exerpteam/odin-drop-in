@@ -43,31 +43,30 @@ The developer must perform the following setup tasks:
 
 **4. ODIN Drop-in Component Implementation (MVP - One-Time CC Payment)**
 
-Implement the initial ODIN Drop-in functionality within the `@odin-payments/core` Stencil package and expose it via the `@odin-payments/odin-dropin` facade package.
+Implement the initial ODIN Drop-in functionality within the `@exerp/odin-dropin-core` Stencil package. This core package produces standard Web Components. The `@exerp/odin-dropin` facade package then consumes these components by directly importing their JavaScript definitions (from the `dist-custom-elements` output of the core package). This approach ensures that the web components are defined when the facade is used, simplifying integration into host applications.
 
-- **Public API (`@odin-payments/odin-dropin`):**
-  - Expose a primary class or function set (e.g., `OdinDropin`) for initialization and mounting.
+- **Public API (`@exerp/odin-dropin`):**
+  - Expose a primary class (e.g., `OdinDropin`) for initialization and mounting.
+    -   🧑‍💻 This class directly creates instances of the Stencil web components (e.g., `document.createElement('exerp-odin-cc-form')`) after they have been defined via module import.
   - **Initialization:** Must accept a configuration object with at least:
     - `odinPublicToken` (string): The short-lived public token obtained from the ODIN backend (the _host application_ will fetch this and pass it in).
-    - `config` (object, optional): Placeholder for future configuration like amount, currency, theme overrides etc.
-  - **Mounting:** Provide a `mount(selector: string)` method that targets a DOM element (specified by CSS selector) where the drop-in UI will be rendered.
+    - `isSingleUse` (boolean, default: `true`): Indicates if the payment method token generated should be treated as single-use (`true`) or intended for saving (`false`).
+    - `config` (object, optional): Configuration options. For the MVP, this can include:
+      - `theme` (object, optional): A simplified theme object.
+  - **Mounting:** Provide a `mount(selector: string | HTMLElement)` method that targets a DOM element where the drop-in UI (the Stencil component) will be rendered.
   - **Callbacks:** The configuration object must accept _at least_ the following callback functions provided by the host application:
-    - `onSubmit(result: { paymentMethodId: string, /* other relevant state? */ })`: Called _only_ when `OdinPay.js` successfully returns a `paymentMethod` after the user submits the form. The drop-in **must** pass the extracted `paymentMethod.id` (and potentially other non-sensitive state if needed) to this callback. **Crucially, the drop-in itself does NOT perform the final payment API call.**
-    - `onError(error: any)`: Called when `OdinPay.js` or the drop-in itself encounters an error during setup or user interaction (e.g., invalid input detected by OdinPay.js).
-- **Internal Logic (`@odin-payments/core`):**
-  - The core Stencil component(s) must:
-    - Receive the `odinPublicToken` and other configuration via props from the facade.
-    - Import and instantiate the official `OdinPay` library using the provided `odinPublicToken`. Basic theming options from the CodePen examples should be supported via the `config` passed to `OdinPay`.
+    - `onSubmit(result: { paymentMethodId: string, /* other relevant state? */ })`: Called when `OdinPay.js` (via the Stencil component) successfully returns a `paymentMethodId`.
+    - `onError(error: { code: string, message?: string, /* ... */ })`: Called when `OdinPay.js` or the Stencil component encounters an error.
+
+- **Internal Logic (`@exerp/odin-dropin-core` - Stencil Components):**
+  - The core Stencil component(s) (e.g., `exerp-odin-cc-form`):
+    - Will receive `odinPublicToken`, `isSingleUse`, `theme`, and callback configurations as properties/attributes passed from the facade when the component instance is created and configured.
+    - Must dynamically load the external `OdinPay.js` library (e.g., by injecting its script tag).
+    - Instantiate the official `OdinPay` library using the provided `odinPublicToken` and theme.
     - Use `OdinPay.createCardForm()` to render the necessary payment fields.
-    - **MVP Field Scope:** For this MVP, only implement the mandatory fields required for a basic one-time CC payment capture using `OdinPay.js`. Based on CodePen examples, this likely includes:
-      - `cardInformation`: (Card Number, Expiry, CVC) - Rendered within a container.
-      - `postalCode`: (Postal Code input) - Rendered within a container.
-      - _(Optional but Recommended)_: Consider adding `name` field capture as it's often required.
-    - **Secure Field Rendering:** Design the component structure to support rendering sensitive fields (Card Number, CVC, Expiry) within secure iframes, mirroring the Adyen/standard payment security pattern. While the _initial_ implementation might use standard inputs for simplicity during boilerplate setup, the component architecture **must** be designed to easily switch to using iframes for these fields in a subsequent step (this might involve creating separate minimal Stencil components or JS logic loaded into the iframes).
-    - Configure the `submitButton.callback` within `OdinPay.createCardForm()`. On success, extract the `paymentMethod.id` from the `result` provided by `OdinPay.js` and trigger the host's `onSubmit` callback. On error within `OdinPay.js`, trigger the host's `onError` callback.
-- **UI Rendering:**
-  - Use Stencil's JSX/TSX to render the necessary container `div` elements that `OdinPay.js` targets for injecting its fields.
-  - Provide basic, minimal default styling. Ensure class names are used to allow host applications to override styles easily (since Shadow DOM is initially disabled). Plan for CSS Custom Property usage for theming later.
+    - **MVP Field Scope:** `cardInformation`, `postalCode`. (Optional: `name`).
+    - **Secure Field Rendering:** Render `div` containers; `OdinPay.js` injects its secure fields into these.
+    - Configure `submitButton.callback` within `OdinPay.createCardForm()`. On success, extract `paymentMethodId` and trigger an event or prop callback that the facade listens to, which in turn calls the host's `onSubmit`. Similarly for errors.
 
 **5. Testing & Development Workflow**
 
