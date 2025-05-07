@@ -404,3 +404,23 @@ The `@exerp/odin-dropin` facade now successfully instantiates and mounts the `ex
 -   The `exerp-odin-cc-form` component renders successfully in `webapp-standard`.
 -   The build process for both `core` and `odin-dropin` packages is successful.
 -   Type checking for the facade package is passing.
+
+## 12. Implement Drop-in Rendering in Demo App
+
+### State
+The `apps/demo/src/App.vue` component has been updated to correctly import, initialize, and mount the `@exerp/odin-dropin` facade. This allows the `exerp-odin-cc-form` web component to be rendered within the demo application for interactive testing.
+
+### Key Changes:
+-   **`apps/demo/src/App.vue`:**
+    -   Imported the `OdinDropin` class from `@exerp/odin-dropin`.
+    -   Implemented the `initializeAndMountDropin` method:
+        -   Instantiates `OdinDropin` with the provided public token and basic `onSubmit`/`onError` callbacks.
+        -   Calls the `mount()` method of the `OdinDropin` instance, targeting a `div` element referenced by `dropinContainerRef`.
+        -   Added logic to unmount any previous instance if the button is clicked multiple times.
+        -   Used `nextTick` before mounting to ensure the DOM is ready.
+    -   The demo app now successfully renders the `exerp-odin-cc-form` component when a public token is provided and the "Initialize & Mount Drop-in" button is clicked.
+
+### Current Status:
+-   The demo application (`apps/demo`) can now visually render the basic structure of the ODIN CC form component.
+-   The core Stencil component is being correctly mounted via the facade.
+-   Next steps will involve passing properties to the Stencil component and handling callbacks from `OdinPay.js`.

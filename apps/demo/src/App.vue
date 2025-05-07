@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-// TODO: Import OdinDropin from '@exerp/odin-dropin' later
+import { ref, onMounted, nextTick } from 'vue';
+import { OdinDropin } from '@exerp/odin-dropin';
 
 // --- State ---
-const odinPublicToken = ref(''); // Input for the public token
-const dropinContainerRef = ref<HTMLElement | null>(null); // Ref for the mount point
-const paymentMethodId = ref<string | null>(null); // To display the result
-const errorMessage = ref<string | null>(null); // To display errors
+const odinPublicToken = ref('');
+const dropinContainerRef = ref<HTMLElement | null>(null);
+const paymentMethodId = ref<string | null>(null);
+const errorMessage = ref<string | null>(null);
+let odinDropinInstance: OdinDropin | null = null; // To store the instance
 
 // --- Methods ---
-function initializeAndMountDropin() {
+async function initializeAndMountDropin() {
   paymentMethodId.value = null;
   errorMessage.value = null;
-  console.log('Attempting to initialize Drop-in...'); // Placeholder log
+  console.log('Attempting to initialize Drop-in...');
 
   if (!odinPublicToken.value) {
     errorMessage.value = 'Please provide an ODIN Public Token.';
@@ -20,44 +21,56 @@ function initializeAndMountDropin() {
   }
 
   if (!dropinContainerRef.value) {
-    errorMessage.value = 'Drop-in container element not found.';
+    errorMessage.value = 'Drop-in container element not found.'; // Should not happen with ref
     return;
   }
 
-  // TODO: Actual Drop-in Initialization Logic Here
-  // Example (will be implemented later):
-  // try {
-  //   const dropin = new OdinDropin({
-  //     odinPublicToken: odinPublicToken.value,
-  //     isSingleUse: true, // Example for MVP
-  //     config: {
-  //       theme: { primaryColor: '#007bff' } // Example theme
-  //     },
-  //     onSubmit: (result) => {
-  //       console.log('Drop-in onSubmit:', result);
-  //       paymentMethodId.value = result.paymentMethodId;
-  //     },
-  //     onError: (error) => {
-  //       console.error('Drop-in onError:', error);
-  //       errorMessage.value = `Error: ${error.code} ${error.message ? '- ' + error.message : ''}`;
-  //     }
-  //   });
-  //   dropin.mount(dropinContainerRef.value); // Pass the actual element
-  //   console.log('Drop-in mount called.');
-  // } catch (error) {
-  //   console.error('Failed to initialize or mount Drop-in:', error);
-  //   errorMessage.value = 'Failed to initialize Drop-in instance.';
-  // }
+  // Unmount previous instance if exists
+  if (odinDropinInstance) {
+    odinDropinInstance.unmount();
+    odinDropinInstance = null;
+  }
 
-  // Placeholder for now:
-  errorMessage.value = "Drop-in logic not yet implemented.";
+  // Wait for the DOM to be ready, especially if container was conditionally rendered
+  await nextTick();
 
+  try {
+    // Actual Drop-in Initialization Logic
+    odinDropinInstance = new OdinDropin({
+      odinPublicToken: odinPublicToken.value,
+      isSingleUse: true, // Example for MVP
+      config: {
+        // theme: { primaryColor: '#007bff' } // Example theme, uncomment if you want to test
+      },
+      onSubmit: (result) => {
+        console.log('Demo App onSubmit:', result);
+        paymentMethodId.value = result.paymentMethodId;
+        // Minimal visual feedback in demo
+        errorMessage.value = null; 
+      },
+      onError: (error) => {
+        console.error('Demo App onError:', error);
+        errorMessage.value = `Error Code: ${error.code}${error.message ? ' - ' + error.message : ''}${error.field ? ' (Field: ' + error.field + ')' : ''}`;
+        // Minimal visual feedback in demo
+        paymentMethodId.value = null; 
+      }
+    });
+
+    // 🧑‍💻 Pass the actual HTMLElement to mount
+    odinDropinInstance.mount(dropinContainerRef.value); 
+    console.log('Drop-in mount called on:', dropinContainerRef.value);
+  } catch (error: any) {
+    console.error('Failed to initialize or mount Drop-in:', error);
+    errorMessage.value = `Failed to initialize Drop-in instance: ${error.message || error}`;
+  }
 }
 
 // --- Lifecycle ---
 onMounted(() => {
-  // We could potentially auto-mount if a token was pre-filled,
-  // but manual mounting via button is clearer for demo purposes.
+  // Auto-mount if token pre-filled (optional, for faster testing)
+  // if (odinPublicToken.value && dropinContainerRef.value) {
+  //   initializeAndMountDropin();
+  // }
 });
 
 </script>
