@@ -8,7 +8,7 @@
     "jsxFragmentFactory": "Fragment",
     "lib": ["dom", "esnext"],
     "module": "ESNext",         // Stencil typically uses ESNext modules
-    // "moduleResolution": "node", // Revert to 'node', worked for Puppeteer, common in Stencil examples
+    "moduleResolution": "bundler",
     "target": "ES2022",         // Modern JS target
     "composite": true,           // 🧑‍💻 Add for project references
     "declaration": true,         // Already there implicitly by Stencil, but good to be explicit
