@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
-import { OdinDropin } from '@exerp/odin-dropin';
+import { ref, onMounted, nextTick } from "vue";
+import { OdinDropin } from "@exerp/odin-dropin";
 
 // --- State ---
-const odinPublicToken = ref('');
+const odinPublicToken = ref("");
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
@@ -13,15 +13,15 @@ let odinDropinInstance: OdinDropin | null = null; // To store the instance
 async function initializeAndMountDropin() {
   paymentMethodId.value = null;
   errorMessage.value = null;
-  console.log('Attempting to initialize Drop-in...');
+  console.log("Attempting to initialize Drop-in...");
 
   if (!odinPublicToken.value) {
-    errorMessage.value = 'Please provide an ODIN Public Token.';
+    errorMessage.value = "Please provide an ODIN Public Token.";
     return;
   }
 
   if (!dropinContainerRef.value) {
-    errorMessage.value = 'Drop-in container element not found.'; // Should not happen with ref
+    errorMessage.value = "Drop-in container element not found."; // Should not happen with ref
     return;
   }
 
@@ -43,24 +43,23 @@ async function initializeAndMountDropin() {
         // theme: { primaryColor: '#007bff' } // Example theme, uncomment if you want to test
       },
       onSubmit: (result) => {
-        console.log('Demo App onSubmit:', result);
+        console.log("Demo App onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
-        // Minimal visual feedback in demo
-        errorMessage.value = null; 
+        errorMessage.value = null;
       },
       onError: (error) => {
-        console.error('Demo App onError:', error);
-        errorMessage.value = `Error Code: ${error.code}${error.message ? ' - ' + error.message : ''}${error.field ? ' (Field: ' + error.field + ')' : ''}`;
+        console.error("Demo App onError:", error);
+        errorMessage.value = `Error Code: ${error.code}${error.message ? " - " + error.message : ""}${error.field ? " (Field: " + error.field + ")" : ""}`;
         // Minimal visual feedback in demo
-        paymentMethodId.value = null; 
-      }
+        paymentMethodId.value = null;
+      },
     });
 
-    // 🧑‍💻 Pass the actual HTMLElement to mount
-    odinDropinInstance.mount(dropinContainerRef.value); 
-    console.log('Drop-in mount called on:', dropinContainerRef.value);
+    // Pass the actual HTMLElement to mount
+    odinDropinInstance.mount(dropinContainerRef.value);
+    console.log("Drop-in mount called on:", dropinContainerRef.value);
   } catch (error: any) {
-    console.error('Failed to initialize or mount Drop-in:', error);
+    console.error("Failed to initialize or mount Drop-in:", error);
     errorMessage.value = `Failed to initialize Drop-in instance: ${error.message || error}`;
   }
 }
@@ -72,7 +71,6 @@ onMounted(() => {
   //   initializeAndMountDropin();
   // }
 });
-
 </script>
 
 <template>
@@ -87,7 +85,9 @@ onMounted(() => {
         v-model="odinPublicToken"
         placeholder="Paste your test public token here"
       />
-      <button @click="initializeAndMountDropin">Initialize & Mount Drop-in</button>
+      <button @click="initializeAndMountDropin">
+        Initialize & Mount Drop-in
+      </button>
     </div>
 
     <div class="dropin-section">
@@ -110,85 +110,187 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Enhanced Demo App Styling */
 .demo-container {
-  font-family: sans-serif;
-  padding: 20px;
-  max-width: 600px;
-  margin: 40px auto;
-  border: 1px solid #ccc;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  padding: 30px;
+  max-width: 550px; /* Slightly narrower */
+  margin: 40px auto; /* More top/bottom margin */
+  border: 1px solid #e2e8f0; /* Lighter border */
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: #f8f9fa; /* Slightly off-white */
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+  color: #4a5568; /* Default text color */
+}
+
+h1 {
+  text-align: center;
+  color: #2d3748; /* Darker heading */
+  margin-bottom: 30px;
+  font-weight: 600;
 }
 
 .config-section,
 .dropin-section,
 .results-section {
-  margin-bottom: 20px;
-  padding: 15px;
-  border: 1px dashed #ddd;
-  border-radius: 4px;
+  margin-bottom: 30px;
+  padding: 25px;
+  border: 1px solid #e2e8f0; /* Solid, lighter border */
+  border-radius: 6px;
+  background-color: #ffffff; /* White background for contrast */
 }
 
 .config-section label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 600; /* Bold labels */
+  color: #4a5568;
+  font-size: 0.95em;
 }
 
 .config-section input[type="text"] {
-  width: calc(100% - 22px); /* Adjust for padding/border */
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
+  width: 100%; /* Use 100% width */
+  box-sizing: border-box; /* Include padding/border in width */
+  padding: 12px; /* More padding */
+  margin-bottom: 15px;
+  border: 1px solid #cbd5e0; /* Slightly darker border */
   border-radius: 4px;
+  font-size: 1em;
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}
+
+.config-section input[type="text"]:focus {
+  border-color: #4299e1; /* Blue border on focus */
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue glow on focus */
+  outline: none;
 }
 
 .config-section button {
-  padding: 10px 15px;
-  background-color: #007bff;
+  padding: 11px 20px;
+  background-color: #48bb78; /* Nicer green */
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .config-section button:hover {
-  background-color: #0056b3;
+  background-color: #38a169; /* Darker green */
+}
+
+.dropin-section h2,
+.results-section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.2em;
+  border-bottom: 1px solid #edf2f7; /* Lighter border */
+  padding-bottom: 10px;
 }
 
 #odin-dropin-container {
-  min-height: 100px; /* Ensure it has some space */
-  background-color: #fff;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #eee;
+  min-height: 150px;
+  padding: 5px; /* Reduced padding to let internal component spacing dominate */
 }
 
-.results-section h2 {
-  margin-bottom: 10px;
+.results-section code {
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  background-color: #edf2f7; /* Lighter grey background */
+  padding: 4px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+  color: #4a5568;
+  font-size: 0.9em;
 }
 
 .success-message {
-  color: green;
-  background-color: #e9f7ef;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #b4e3cd;
+  color: #2f855a; /* Darker green */
+  background-color: #f0fff4; /* Very light green */
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid #9ae6b4; /* Green border */
+  margin-top: 10px;
+  font-weight: 500;
 }
 
 .error-message {
-  color: red;
-  background-color: #fdeded;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #f1aeae;
+  color: #c53030; /* Darker red */
+  background-color: #fff5f5; /* Very light red */
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid #feb2b2; /* Red border */
+  margin-top: 10px;
+  font-weight: 500;
 }
 
-code {
-  font-family: monospace;
-  background-color: #eee;
-  padding: 2px 4px;
-  border-radius: 3px;
+/* --- Styling elements INSIDE the Stencil Component --- */
+/* Use :deep() */
+
+/* Style the Submit Button */
+:deep(.odin-submit-button) {
+  padding: 11px 20px;
+  background-color: #4299e1; /* Blue */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+:deep(.odin-submit-button:hover) {
+  background-color: #2b6cb0; /* Darker blue */
+}
+
+:deep(.odin-submit-button:disabled) {
+  opacity: 0.5; /* Slightly less opaque */
+  cursor: not-allowed;
+  background-color: #a0aec0; /* Grey background when disabled */
+}
+
+/* Style the Error Message Container */
+:deep(.odin-error-message-container) {
+  color: #c53030;
+  background-color: #fff5f5;
+  border: 1px solid #feb2b2;
+  padding: 12px;
+  margin-top: 20px; /* More space above error */
+  font-size: 0.9em;
+  border-radius: 5px;
+  text-align: left; /* Align error text left */
+}
+
+/* Style the field labels */
+:deep(.odin-field-container label) {
+  display: block;
+  margin-bottom: 6px; /* Slightly more space below label */
+  font-weight: 500; /* Slightly bolder */
+  font-size: 0.9em;
+  color: #4a5568;
+}
+
+/* Style the field container div (subtle adjustments) */
+:deep(.odin-input) {
+  /* We rely on the OdinPay theme for border/background/etc */
+  /* Just ensure it behaves like a block */
+  display: block;
+  width: 100%;
+}
+
+/* Container for the Pay button */
+:deep(.odin-submit-container) {
+  margin-top: 25px; /* More space above button */
 }
 </style>

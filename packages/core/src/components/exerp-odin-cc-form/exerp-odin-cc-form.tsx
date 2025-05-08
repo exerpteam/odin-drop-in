@@ -252,11 +252,12 @@ export class ExerpOdinCcForm {
         )}
         {this.formRendered && <div style={{ color: 'green', marginBottom: '10px', border: '1px solid green', padding: '5px' }}>OdinPay Form Rendered/Configured Successfully!</div>}
 
-        {/* 🧑‍💻 Display Odin Callback Error */}
+        {/* Display Odin Callback Error */}
         {this.callbackError && (
-          <div style={{ color: 'red', marginBottom: '10px', border: '1px solid red', padding: '5px', marginTop: '10px' }}>Submission Error: {this.callbackError}</div>
+          <div class="odin-error-message-container" style={{ marginTop: '10px' }}>
+            Submission Error: {this.callbackError}
+          </div>
         )}
-
         <div class="odin-field-container">
           <label htmlFor={this.cardInfoId}>Card Information</label>
           <div id={this.cardInfoId} class="odin-input">
