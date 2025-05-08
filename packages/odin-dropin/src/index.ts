@@ -1,4 +1,8 @@
 import "@exerp/odin-dropin-core/exerp-odin-cc-form";
+import {
+  OdinPayErrorPayload,
+  OdinPaySubmitPayload,
+} from "../../core/dist/types/components";
 
 // 🧑‍💻 Define interfaces for the configuration and callbacks based on the MVP spec
 interface OdinDropinConfigOptions {
@@ -11,24 +15,18 @@ interface OdinSubmitPayload {
   // other relevant state?
 }
 
-interface OdinErrorPayload {
-  code: string;
-  message?: string;
-  field?: string;
-  // other potential OdinPay error fields
-}
-
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
   isSingleUse?: boolean;
   config?: OdinDropinConfigOptions;
   onSubmit: (result: OdinSubmitPayload) => void;
-  onError: (error: OdinErrorPayload) => void;
+  onError: (error: OdinPayErrorPayload) => void;
 }
 
 export class OdinDropin {
   private params: OdinDropinInitializationParams;
   private odinCcFormComponent: HTMLExerpOdinCcFormElement | null = null;
+  private eventListenersAttached: boolean = false;
 
   constructor(params: OdinDropinInitializationParams) {
     this.params = params;
@@ -99,8 +97,14 @@ export class OdinDropin {
         this.odinCcFormComponent.odinPublicToken
       ); // 🧑‍💻 Log the value from the instance
 
+      // --- 🧑‍💻 ADD EVENT LISTENERS ---
+      this.odinCcFormComponent.addEventListener('odinSubmitInternal', this.handleOdinSubmit);
+      this.odinCcFormComponent.addEventListener('odinErrorInternal', this.handleOdinError);
+      this.eventListenersAttached = true;
+      // --- END ADD ---
+
       mountPoint.appendChild(this.odinCcFormComponent);
-      console.log("exerp-odin-cc-form mounted with token to", mountPoint);
+      console.log("exerp-odin-cc-form mounted to", mountPoint, "with token and isSingleUse config.");
     } else {
       console.error("Failed to create exerp-odin-cc-form component instance.");
       this.params.onError({
@@ -110,9 +114,29 @@ export class OdinDropin {
     }
   }
 
+
+  private handleOdinSubmit = (event: CustomEvent<OdinPaySubmitPayload>) => {
+    console.log('[Facade] handleOdinSubmit TRIGGERED. Event detail:', event.detail); // Log to confirm it's hit
+    this.params.onSubmit(event.detail); // Call the host app's callback
+  };
+
+  private handleOdinError = (event: CustomEvent<OdinPayErrorPayload>) => {
+    console.log('[Facade] handleOdinError TRIGGERED. Event detail:', event.detail); // Log to confirm it's hit
+    this.params.onError(event.detail); // Call the host app's callback
+  };
+
   public unmount(): void {
-    if (this.odinCcFormComponent && this.odinCcFormComponent.parentNode) {
-      this.odinCcFormComponent.parentNode.removeChild(this.odinCcFormComponent);
+    if (this.odinCcFormComponent) {
+      // --- 🧑‍💻 ADD LISTENER REMOVAL ---
+      if (this.eventListenersAttached) {
+        this.odinCcFormComponent.removeEventListener('odinSubmitInternal', this.handleOdinSubmit);
+        this.odinCcFormComponent.removeEventListener('odinErrorInternal', this.handleOdinError);
+        this.eventListenersAttached = false;
+      }
+      // --- END ADD ---
+      if (this.odinCcFormComponent.parentNode) {
+        this.odinCcFormComponent.parentNode.removeChild(this.odinCcFormComponent);
+      }
       this.odinCcFormComponent = null;
       console.log("exerp-odin-cc-form unmounted.");
     }
