@@ -51,9 +51,7 @@ export class ExerpOdinCcForm {
   @State() private odinPayInstance: any = null;
   @State() private scriptLoaded: boolean = false;
   @State() private initializationError: string | null = null;
-  @State() private formRendered: boolean = false;
   @State() private isLoading: boolean = false;
-  @State() private callbackError: string | null = null;
 
   private componentId = `exerp-odin-cc-form-${Math.random().toString(36).substring(2, 9)}`;
   private cardInfoId = `${this.componentId}-card-info`;
@@ -97,8 +95,6 @@ export class ExerpOdinCcForm {
   private async initializeOdinPayAndForm() {
     this.isLoading = true;
     this.initializationError = null;
-    this.callbackError = null;
-    this.formRendered = false;
     try {
       if (!this.scriptLoaded) {
         await this.loadScript('https://js.odinpay.net', 'odin-pay-sdk');
@@ -109,7 +105,7 @@ export class ExerpOdinCcForm {
       if (typeof OdinPay === 'undefined') {
         this.initializationError = 'OdinPay SDK is not available even after script load.';
         console.error(this.initializationError);
-        this.formRendered = false;
+        this.odinErrorInternal.emit({ message: this.initializationError, code: 'SDK_LOAD_ERROR' });
         return;
       }
 
@@ -136,8 +132,8 @@ export class ExerpOdinCcForm {
     } catch (error) {
       console.error('[Core Component] Error initializing OdinPay:', error);
       this.initializationError = (error as any)?.message || 'Failed to initialize OdinPay.';
+      this.odinErrorInternal.emit({ message: this.initializationError!, code: 'INITIALIZATION_ERROR' });
       this.odinPayInstance = null;
-      this.formRendered = false;
       this.isLoading = false;
     }
   }
@@ -147,8 +143,8 @@ export class ExerpOdinCcForm {
     if (!this.odinPayInstance) {
       console.warn('[Core Component] OdinPay instance not available to create form.');
       this.initializationError = 'OdinPay instance is null, cannot render form.';
-      this.formRendered = false;
-      this.isLoading = false; // 🧑‍💻 Stop loading if instance is missing
+      this.odinErrorInternal.emit({ message: this.initializationError, code: 'INSTANCE_NULL' });
+      this.isLoading = false;
       return;
     }
 
@@ -162,7 +158,6 @@ export class ExerpOdinCcForm {
           selector: this.odinSubmitButtonId,
           callback: (result: any) => {
             console.log('[Core Component] OdinPay submit callback RAW result:', JSON.stringify(result, null, 2));
-            this.callbackError = null; // 🧑‍💻 Clear previous callback errors
 
             if (result && result.success === true && result.paymentMethod && result.paymentMethod.id) {
               console.log('[Core Component] Success! PaymentMethodID:', result.paymentMethod.id);
@@ -172,18 +167,16 @@ export class ExerpOdinCcForm {
               // 🧑‍💻 Handle error based on result.message
               const errorMessage = typeof result.message === 'object' ? JSON.stringify(result.message) : result.message;
               console.error('[Core Component] Error from OdinPay callback:', errorMessage);
-              this.callbackError = errorMessage || 'Unknown error occurred during submission.'; // 🧑‍💻 Set state to display error
               // 🧑‍💻 Emit error event
               this.odinErrorInternal.emit({
-                message: this.callbackError!, // we know it's not null here
+                message: errorMessage || 'Unknown error occurred during submission.',
                 code: 'ODIN_CALLBACK_ERROR', // Use a generic code for now
               });
             } else {
               // 🧑‍💻 Handle unexpected structure
               console.warn('[Core Component] OdinPay callback with unexpected result structure:', result);
-              this.callbackError = 'Received an unexpected result structure from OdinPay.'; // 🧑‍💻 Set state
               this.odinErrorInternal.emit({
-                message: this.callbackError,
+                message: 'Received an unexpected result structure from OdinPay.',
                 code: 'UNEXPECTED_CALLBACK_STRUCTURE',
               });
             }
@@ -208,21 +201,18 @@ export class ExerpOdinCcForm {
         },
       });
       console.log('[Core Component] OdinPay createCardForm called successfully.');
-      this.formRendered = true; // 🧑‍💻 Set state to indicate form should be rendered
       this.initializationError = null;
       this.isLoading = false; // 🧑‍💻 Set loading false after createCardForm call succeeds
     } catch (error) {
       console.error('[Core Component] Error calling createCardForm:', error);
       this.initializationError = (error as any)?.message || 'Failed to create OdinPay card form.';
-      this.formRendered = false;
+      this.odinErrorInternal.emit({ message: this.initializationError!, code: 'CREATE_FORM_ERROR' });
       this.isLoading = false;
     }
   }
 
   private handleVisibleSubmitClick = () => {
     console.log('[Core Component] Visible submit button clicked.');
-    // 🧑‍💻 Clear previous errors when user tries again
-    this.callbackError = null;
     // 🧑‍💻 Set loading state
     this.isLoading = true;
 
@@ -234,8 +224,7 @@ export class ExerpOdinCcForm {
       // Note: isLoading will be set to false inside the OdinPay callback
     } else {
       console.error('[Core Component] Hidden Odin submit button not found!');
-      this.callbackError = 'Internal error: Submit button not found.';
-      this.odinErrorInternal.emit({ message: this.callbackError, code: 'INTERNAL_ERROR' });
+      this.odinErrorInternal.emit({ message: 'Internal error: Submit button not found.', code: 'INTERNAL_ERROR' });
       this.isLoading = false; // Stop loading if we can't proceed
     }
   };
@@ -247,17 +236,6 @@ export class ExerpOdinCcForm {
           <div style={{ color: 'red', marginBottom: '10px', border: '1px solid red', padding: '5px' }}>Initialization Error: {this.initializationError}</div>
         )}
 
-        {this.scriptLoaded && !this.initializationError && !this.formRendered && (
-          <div style={{ color: 'orange', marginBottom: '10px', border: '1px solid orange', padding: '5px' }}>OdinPay Initialized. Attempting to render form...</div>
-        )}
-        {this.formRendered && <div style={{ color: 'green', marginBottom: '10px', border: '1px solid green', padding: '5px' }}>OdinPay Form Rendered/Configured Successfully!</div>}
-
-        {/* Display Odin Callback Error */}
-        {this.callbackError && (
-          <div class="odin-error-message-container" style={{ marginTop: '10px' }}>
-            Submission Error: {this.callbackError}
-          </div>
-        )}
         <div class="odin-field-container">
           <label htmlFor={this.cardInfoId}>Card Information</label>
           <div id={this.cardInfoId} class="odin-input">
@@ -285,7 +263,7 @@ export class ExerpOdinCcForm {
             id={this.visibleSubmitButtonId}
             class="odin-submit-button" // Keep existing class for styling
             type="button"
-            disabled={this.isLoading || !this.formRendered} // Disable if loading OR if form hasn't rendered
+            disabled={this.isLoading} // Disable if loading OR if form hasn't rendered
             onClick={this.handleVisibleSubmitClick} // Attach our handler
           >
             {this.isLoading ? 'Loading...' : 'Pay'}
@@ -298,6 +276,11 @@ export class ExerpOdinCcForm {
             style={{ display: 'none' }} // Hide it visually
             aria-hidden="true"
           ></button>
+
+          <div class="odin-form-footer">
+            Secured by ODIN Pay {/* TODO: Maybe make text configurable later? */}
+          </div>
+
         </div>
       </div>
     );
