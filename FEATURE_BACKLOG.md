@@ -4,11 +4,6 @@ This document lists planned features and enhancements beyond the initial MVP sco
 
 ## Core Component Enhancements
 
-*   **Theme Configuration Pass-through:**
-    *   **Requirement:** Allow host applications to pass a theme configuration object via the `@exerp/odin-dropin` facade (`config.theme`).
-    *   **Details:** The core Stencil component (`exerp-odin-cc-form`) should accept this theme object as a prop. It should then use this object (merged with defaults) when initializing `OdinPay()` via its `theme` option. This allows host applications to customize the appearance of the input fields rendered by `OdinPay.js`.
-    *   **Status:** Deferred from MVP.
-
 *   **Optional Billing Field Support (`createCardForm`):**
     *   **Requirement:** Allow host applications to configure and render optional billing fields alongside the core Card Information and Postal Code fields.
     *   **Details:**
@@ -23,6 +18,12 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Requirement:** Allow host applications to customize placeholder text and ARIA labels for configurable fields (e.g., `postalCode`, optional billing fields).
     *   **Details:** Extend facade configuration and pass values down as props to the core component, which then uses them in the `OdinPay.createCardForm()` configuration.
     *   **Status:** Pending design/implementation.
+
+*   **Theme Configuration Pass-through:**
+    *   **Requirement:** Allow host applications to pass a theme configuration object via the `@exerp/odin-dropin` facade (`config.theme`).
+    *   **Details:** The core Stencil component (`exerp-odin-cc-form`) should accept this theme object as a prop. It should then use this object (merged with defaults) when initializing `OdinPay()` via its `theme` option. This allows host applications to customize the appearance of the input fields rendered by `OdinPay.js`.
+    *   **Status:** Deferred from MVP. Low priority.
+
 
 ## ACH Support
 
@@ -42,6 +43,30 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   Ensure `isSingleUse: false` is correctly utilized.
     *   Support "update/replace" flows.
 *   **Status:** Pending design/implementation (blocked by $0 auth clarification).
+
+## Testing Strategy & Implementation
+
+*   **Requirement:** Implement a comprehensive testing suite to ensure component reliability and prevent regressions.
+*   **Details:**
+    *   **Core Component Unit Tests (`.spec.ts`):**
+        *   Use Stencil's testing utilities (`@stencil/core/testing`).
+        *   Verify component rendering with different props (`odinPublicToken`, `isSingleUse`).
+        *   Verify the presence of required DOM elements (containers, buttons).
+        *   Potentially mock internal methods (`initializeOdinPayAndForm`) to check if they are called appropriately based on props/lifecycle.
+        *   Verify events are correctly declared and can be emitted (mocking the emit call might be necessary).
+    *   **Facade Unit Tests (`.spec.ts` / `.test.ts`):**
+        *   Add a test runner (e.g., Vitest) to the `packages/odin-dropin` package.
+        *   Test the `OdinDropin` class logic (constructor, parameter handling, defaults).
+        *   Mock DOM interactions (`document.createElement`, `appendChild`, `removeChild`) and the core component instance.
+        *   Verify `mount()` sets props and attaches listeners correctly.
+        *   Verify `unmount()` removes the element and listeners.
+        *   Verify facade event handlers correctly call the provided `onSubmit`/`onError` callbacks.
+    *   **Core Component E2E Tests (`.e2e.ts`):**
+        *   Use Stencil's E2E testing (Puppeteer).
+        *   Verify basic rendering in a browser context.
+        *   Test prop updates reflect in the DOM where applicable (e.g., if we added displayed text based on props).
+        *   *(Note: Full end-to-end testing involving OdinPay.js iframe interaction might be complex/brittle and lower priority).*
+*   **Status:** Pending implementation.
 
 ## Other
 
