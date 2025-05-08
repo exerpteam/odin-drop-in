@@ -425,43 +425,44 @@ The `apps/demo/src/App.vue` component has been updated to correctly import, init
 -   The core Stencil component is being correctly mounted via the facade.
 -   Next steps will involve passing properties to the Stencil component and handling callbacks from `OdinPay.js`.
 
-## 13. Integrate OdinPay.js for CC Form Rendering and Callback Handling
+## 13. Implement OdinPay.js Integration, Callback Handling, and UI States
 
 ### State
 The `exerp-odin-cc-form` Stencil component (`packages/core`) now fully integrates `OdinPay.js` to render the credit card and postal code fields. It dynamically loads the `OdinPay.js` script, initializes the `OdinPay` object using the `odinPublicToken` prop, and calls `createCardForm` to display the payment inputs. The `isSingleUse` prop is also passed from the facade to the core component and used in `createCardForm`.
 
-The core component emits `odinSubmitInternal` (with `paymentMethodId`) and `odinErrorInternal` (with error details) events. The `@exerp/odin-dropin` facade listens for these events and, in turn, calls the `onSubmit` and `onError` callbacks provided by the host application (the demo app). This completes the primary data flow for the MVP's one-time CC payment capture.
+The component now correctly handles the `result` object structure returned by the `OdinPay.js` callback (`result.success`, `result.paymentMethod`, `result.message`), including parsing `result.message` when it's an object (e.g., for validation errors). It emits `odinSubmitInternal` (with `paymentMethodId`) on success and `odinErrorInternal` (with error message) on failure.
+
+UI state management has been implemented:
+- A loading state (`isLoading`) disables the submit button and shows "Loading..." text during initialization and submission. (Note: Submission loading relies on the two-button pattern).
+- Initialization and submission errors (`initializationError`, `callbackError`) are displayed directly within the component's UI.
+
+The `@exerp/odin-dropin` facade correctly passes the `isSingleUse` prop and listens for the `odinSubmitInternal`/`odinErrorInternal` events, invoking the host application's `onSubmit`/`onError` callbacks. The host application (`webapp-standard`) successfully provides button styling via Tailwind, confirming the host-styling strategy.
 
 ### Key Changes & Resolutions:
 
 -   **Core Component (`packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx`):**
-    -   Implemented a `loadScript` method to dynamically inject `https://js.odinpay.net` into the document head.
-    -   In `componentDidLoad` (and on `odinPublicToken` change), it initializes the `OdinPay` object using the `odinPublicToken` and a basic theme.
-    -   Added `isSingleUse` as a `@Prop()` (defaulting to `true`).
-    -   Added `@Event() emitters` for `odinSubmitInternal` and `odinErrorInternal` with defined payload types (`OdinPaySubmitPayload`, `OdinPayErrorPayload`).
-    -   Implemented a `renderOdinForm` method that calls `this.odinPayInstance.createCardForm()`:
-        -   Configured with `isSingleUse` prop.
-        -   Targets the correct `div` selectors (e.g., `this.cardInfoId`, `this.postalCodeId`) for field injection.
-        -   Targets the correct `button` selector (e.g., `this.submitButtonId`) for the submit action.
-        -   The callback provided to `createCardForm` now extracts `paymentMethod.id` or `error` details and emits the corresponding `odinSubmitInternal` or `odinErrorInternal` event.
-    -   Added state variables (`scriptLoaded`, `initializationError`, `formRendered`) and updated the `render()` method to display status messages during initialization and form rendering.
+    -   Retained dynamic `loadScript` and `OdinPay` initialization logic.
+    -   Retained `@Prop()` for `odinPublicToken` and `isSingleUse`.
+    -   Retained `@Event()` emitters for `odinSubmitInternal` and `odinErrorInternal`. Updated `OdinPayErrorPayload` interface based on callback results.
+    -   **Callback Update:** The callback provided to `createCardForm` now checks `result.success` (boolean).
+        -   On `success: true`, it extracts `result.paymentMethod.id` and emits `odinSubmitInternal`.
+        -   On `success: false`, it extracts the error from `result.message` (handling both string and object types) and emits `odinErrorInternal`.
+    -   **Loading State:** Implemented `isLoading` state. Uses a visible button (user clicks) and a hidden button (OdinPay targets). `isLoading` is set true on visible button click and false in the OdinPay callback.
+    -   **Error Display:** Added `callbackError` state. The `render()` method now displays the content of `callbackError` in a designated error message container.
+    -   **Button State:** The visible submit button is disabled based on the `isLoading` state and whether the form has rendered (`!this.formRendered`).
 
 -   **Facade (`packages/odin-dropin/src/index.ts`):**
-    -   The `OdinDropin` constructor now correctly defaults `isSingleUse` if not provided.
-    -   The `mount` method now passes the `isSingleUse` property to the `exerp-odin-cc-form` component instance.
-    -   Added event listeners (`addEventListener`) to the created `exerp-odin-cc-form` instance for `odinSubmitInternal` and `odinErrorInternal`.
-    -   Implemented `handleOdinSubmit` and `handleOdinError` methods that are called by these event listeners. These methods then invoke `this.params.onSubmit` and `this.params.onError` (the callbacks passed by the host application) with the event detail.
-    -   Ensured event listeners are removed in the `unmount` method.
-    -   Imported `OdinPaySubmitPayload` and `OdinPayErrorPayload` types from the core package (or assumed they are available/defined).
+    -   Confirmed it passes `isSingleUse` correctly.
+    -   Confirmed event listeners (`odinSubmitInternal`, `odinErrorInternal`) are attached and correctly trigger host callbacks (`onSubmit`, `onError`).
 
--   **Demo Application (`apps/demo/src/App.vue`):**
-    -   The `onSubmit` and `onError` callbacks now successfully receive data originating from `OdinPay.js`, relayed through the core component and facade.
-    -   The demo app's UI reflects the received `paymentMethodId` or error message.
-    -   Confirmed that passing `isSingleUse: false` from the demo app to the facade results in `isSingleUse: false` being logged by the core component during `createCardForm`.
+-   **Host Styling (`webapp-standard/src/views/payment-providers/odin-drop-in/OdinDropInHost.vue`):**
+    -   Removed background/color styles from `.odin-submit-button` in `exerp-odin-cc-form.css` (component styles).
+    -   Added Tailwind styles using `@apply` within `OdinDropInHost.vue`'s `<style>` block, targeting `.odin-submit-button` (using `:deep()`). This successfully styled the button according to the host application's theme, validating the minimal-component + host-styling strategy.
 
 ### Current Status:
--   The ODIN CC form fields are rendered by `OdinPay.js` within the Stencil component.
--   The `isSingleUse` configuration is passed through correctly.
--   Successful submissions provide the `paymentMethodId` to the demo application.
--   Errors from `OdinPay.js` (e.g., invalid card number) are propagated to the demo application.
--   The core MVP requirement for capturing CC details and obtaining a `paymentMethodId` via `OdinPay.js` is functional.
+-   The ODIN CC form renders correctly via `OdinPay.js`.
+-   `isSingleUse` configuration is handled.
+-   Loading state during submission is functional.
+-   Successful submissions and errors (including validation errors) are correctly processed, emitted, and displayed in the UI and relayed to the host app.
+-   Host application styling is successfully applied.
+-   The core MVP functionality is complete and robust callback handling is implemented.

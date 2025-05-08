@@ -23,11 +23,14 @@ export const config: Config = {
       // If the above doesn't work, we might need copy assets config, but let's keep it simple first.
       serviceWorker: null, // Keep service worker disabled
     },
+    {
+      type: 'docs-readme', // Generates readme.md files for components
+      // dir: 'docs' // Optional: specify output directory if needed, default is component dir
+    },
   ],
   testing: {
     browserHeadless: 'shell',
   },
-  // 🧑‍💻 Optional: Explicit devServer config (try without this first)
   // devServer: {
   //   root: 'src', // Specify the root directory for the dev server
   //   openBrowser: false // Prevent opening a new tab automatically

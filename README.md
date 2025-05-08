@@ -1,103 +1,216 @@
-**Project: ODIN Web Drop-in Component - MVP Implementation**
+# Exerp ODIN Payment Drop-in Component
 
-**1. Overview & Goal**
+[![License: UNLICENSED](https://img.shields.io/badge/License-UNLICENSED-lightgrey.svg)](LICENSE) <!-- Adjust if license changes -->
+<!-- TODO: Add build status badge later -->
 
-The primary goal is to create the foundational codebase and initial functionality for a reusable, framework-agnostic JavaScript "Drop-in" UI component library for ODIN Payments. This component will allow Exerp's customers to securely capture payment details within their own web applications, similar in concept to Adyen's Web Drop-in.
+## Overview
 
-This MVP focuses _exclusively_ on:
+This repository contains the source code for the Exerp ODIN Payment Drop-in, a reusable JavaScript component library designed to securely capture payment details within web applications. It acts as a wrapper around ODIN's official `OdinPay.js` library, providing a simplified interface for integration, similar in concept to solutions like Adyen Web Drop-in or Stripe Elements.
 
-- Setting up the recommended project structure and tooling (monorepo).
-- Implementing the core drop-in component using the chosen technology stack.
-- Integrating ODIN's `OdinPay.js` library for **one-time Credit Card payment detail capture only**.
-- Establishing clear communication (input configuration and output callbacks) between the drop-in and its host application.
-- Creating a local development and testing workflow.
+**Purpose:** To allow host applications (like Exerp's customer-facing web apps or partner integrations) to embed a UI component that handles the collection of sensitive payment information (Credit Card initially, ACH planned) directly from the user in a secure manner, tokenizing the details via ODIN for subsequent backend processing.
 
-**Future features** (ACH, payment agreement management, $0 auth, etc.) are **out of scope** for this initial task but the architecture should facilitate their later addition.
+## Status (as of May 2025)
 
-**2. Core Technology & Tooling Stack**
+*   **Phase:** MVP (Minimum Viable Product) Complete.
+*   **Supported Features:**
+    *   Secure capture of Credit Card details (Number, Expiry, CVC, Postal Code) for one-time payments.
+    *   Tokenization of card details via `OdinPay.js`.
+    *   Communication of `paymentMethodId` or errors back to the host application via callbacks.
+    *   Basic theming support for input fields (via `OdinPay.js` theme object).
+    *   Host application-driven styling for the submit button and layout.
+*   **Key Technologies:** Built as standard Web Components using [Stencil.js](https://stenciljs.com/), bundled with [Vite](https://vitejs.dev/), and managed in a [Turborepo](https://turbo.build/repo) monorepo with [pnpm](https://pnpm.io/).
 
-The project **must** use the following technology stack:
 
-- **Component Compiler:** **Stencil.js** - To build standard Web Components from TypeScript/JSX.
-- **Language:** **TypeScript** - For all component logic and API definitions.
-- **Build Tool (Library Bundling):** **Vite** (in Library Mode) - To generate the final distributable bundles (ESM, UMD, CJS).
-- **Monorepo Manager:** **Turborepo** - For managing the workspace, build caching, and task orchestration.
-- **Package Manager:** **pnpm** - For dependency management and leveraging workspaces with Turborepo.
+## Packages in this Monorepo
 
-**3. Project Setup & Boilerplate Requirements**
+This workspace uses [pnpm workspaces](https://pnpm.io/workspaces) and includes the following packages:
 
-The developer must perform the following setup tasks:
+*   `packages/odin-dropin` (`@exerp/odin-dropin`): The primary, public-facing facade library. This is the package that host applications should install and import. It provides the `OdinDropin` class for initializing and mounting the component.
+*   `packages/core` (`@exerp/odin-dropin-core`): An internal package containing the core Web Component(s) built with Stencil.js (e.g., `<exerp-odin-cc-form>`). This package is consumed by `@exerp/odin-dropin`. Host applications should *not* depend on this directly.
+*   **`apps/demo` (`@exerp/odin-dropin-demo`)**: A simple Vue 3 + TypeScript demo application used for local development and testing of the `@exerp/odin-dropin` package. See its [README](apps/demo/README.md) for more details on its purpose.
 
-- **Initialize Monorepo:** Set up a new monorepo using Turborepo and pnpm workspaces.
-  - Follow Turborepo documentation for initialization (`npx create-turbo@latest`).
-  - Ensure pnpm is configured as the package manager.
-  - Configure `stencil.config.ts` for library output, targeting Web Components (`dist`, `dist-custom-elements`). Disable Shadow DOM initially (`shadow: false`).
-  - 🧑‍💻 **Note:** While the final library doesn't strictly need the `www` output target, adding a minimal `www` configuration (e.g., `{ type: 'www', indexHtml: 'index.html', serviceWorker: null }`) might be necessary in `stencil.config.ts` for the Stencil development server (`pnpm start` within the core package) to correctly serve the `src/index.html` test page during isolated component development.
-- **Create Facade Package:** Inside `packages/`, create the main publishable package (e.g., `packages/odin-dropin`).
-  - This package will act as the public API facade. Its `src/index.ts` will import necessary elements from `@odin-payments/core` (or your chosen name) and expose the public `OdinDropin` class/functions.
-  - Initialize `package.json` and `tsconfig.json`.
-- **Configure Build:** Set up Vite within the `packages/odin-dropin` package to bundle the facade and necessary Stencil runtime/loaders into ESM, UMD (`OdinDropin` global name), and CJS formats. Ensure Vite correctly handles dependencies on `@odin-payments/core`.
-  - Configure Vite to generate TypeScript declaration files (`.d.ts`) using `vite-plugin-dts`.
-  - Ensure CSS generated by Stencil is handled appropriately (e.g., extracted to a separate `style.css` file, configurable via Vite).
-- **Configure Root:** Set up the root `package.json`, `turbo.json`, and `tsconfig.base.json` for the monorepo, defining workspaces and base build/dev scripts managed by Turborepo.
+## Getting Started for Developers (Working in this Repo)
 
-**4. ODIN Drop-in Component Implementation (MVP - One-Time CC Payment)**
+Follow these steps to set up the development environment for this monorepo.
 
-Implement the initial ODIN Drop-in functionality within the `@exerp/odin-dropin-core` Stencil package. This core package produces standard Web Components. The `@exerp/odin-dropin` facade package then consumes these components by directly importing their JavaScript definitions (from the `dist-custom-elements` output of the core package). This approach ensures that the web components are defined when the facade is used, simplifying integration into host applications.
+**Prerequisites:**
 
-- **Public API (`@exerp/odin-dropin`):**
-  - Expose a primary class (e.g., `OdinDropin`) for initialization and mounting.
-    -   🧑‍💻 This class directly creates instances of the Stencil web components (e.g., `document.createElement('exerp-odin-cc-form')`) after they have been defined via module import.
-  - **Initialization:** Must accept a configuration object with at least:
-    - `odinPublicToken` (string): The short-lived public token obtained from the ODIN backend (the _host application_ will fetch this and pass it in).
-    - `isSingleUse` (boolean, default: `true`): Indicates if the payment method token generated should be treated as single-use (`true`) or intended for saving (`false`).
-    - `config` (object, optional): Configuration options. For the MVP, this can include:
-      - `theme` (object, optional): A simplified theme object.
-  - **Mounting:** Provide a `mount(selector: string | HTMLElement)` method that targets a DOM element where the drop-in UI (the Stencil component) will be rendered.
-  - **Callbacks:** The configuration object must accept _at least_ the following callback functions provided by the host application:
-    - `onSubmit(result: { paymentMethodId: string, /* other relevant state? */ })`: Called when `OdinPay.js` (via the Stencil component) successfully returns a `paymentMethodId`.
-    - `onError(error: { code: string, message?: string, /* ... */ })`: Called when `OdinPay.js` or the Stencil component encounters an error.
+*   [Node.js](https://nodejs.org/) (v18 or higher recommended)
+*   [pnpm](https://pnpm.io/installation) (v9.0.0 or compatible specified in root `package.json`)
 
-- **Internal Logic (`@exerp/odin-dropin-core` - Stencil Components):**
-  - The core Stencil component(s) (e.g., `exerp-odin-cc-form`):
-    - Will receive `odinPublicToken`, `isSingleUse`, `theme`, and callback configurations as properties/attributes passed from the facade when the component instance is created and configured.
-    - Must dynamically load the external `OdinPay.js` library (e.g., by injecting its script tag).
-    - Instantiate the official `OdinPay` library using the provided `odinPublicToken` and theme.
-    - Use `OdinPay.createCardForm()` to render the necessary payment fields.
-    - **MVP Field Scope:** `cardInformation`, `postalCode`. (Optional: `name`).
-    - **Secure Field Rendering:** Render `div` containers; `OdinPay.js` injects its secure fields into these.
-    - Configure `submitButton.callback` within `OdinPay.createCardForm()`. On success, extract `paymentMethodId` and trigger an event or prop callback that the facade listens to, which in turn calls the host's `onSubmit`. Similarly for errors.
+**Installation:**
 
-**5. Testing & Development Workflow**
+Clone the repository and install all dependencies from the workspace root:
 
-- **Local Demo:** Create a simple HTML/JS demo application within the monorepo (e.g., `apps/demo`).
-  - This demo app must consume the `@odin-payments/odin-dropin` package locally using pnpm workspaces.
-  - Include a script (e.g., `pnpm dev` within `apps/demo`) to serve this demo page locally using Vite or a similar simple server.
-  - The demo page must provide:
-    - An input field to paste a test `odinPublicToken`.
-    - A button to initialize and mount the ODIN Drop-in component into a designated `div`.
-    - Implement simple `onSubmit` and `onError` callbacks that log the received data/error to the browser console.
-  - This setup allows the developer to visually test the drop-in component and its basic host communication during development.
+```bash
+git clone <repository-url>
+cd <repository-directory>
+pnpm install
+```
 
-**6. Initial Documentation**
+**Building the Library:**
 
-- Create a `README.md` file in the root of the monorepo.
-- Create a `README.md` file within the `packages/odin-dropin` package.
-- This initial documentation must cover:
-  - Project overview and purpose (MVP scope).
-  - Instructions on how to install dependencies (`pnpm install`).
-  - Instructions on how to build the library (`pnpm turbo build`).
-  - Instructions on how to run the local demo application (`pnpm dev --filter=demo`).
-  - A basic usage example showing how to import, configure (with callbacks), and mount the drop-in in plain JavaScript.
+To build the distributable artifacts for both the `core` and `odin-dropin` packages:
 
-**7. Deliverables**
+```bash
+# Run from the workspace root
+pnpm turbo build
+```
+Build outputs are located in the `dist` directory within each package (e.g., `packages/odin-dropin/dist`).
 
-- A functional monorepo project structure managed by Turborepo and pnpm.
-- A Stencil.js component package (`@odin-payments/core` or similar) implementing the basic CC capture UI wrapping `OdinPay.js`.
-- A facade package (`@odin-payments/odin-dropin`) exposing the public API.
-- Vite build configuration generating ESM, UMD, and CJS bundles for the facade package, including `.d.ts` files.
-- A working local demo application (`apps/demo`) for testing the drop-in.
-- Initial `README.md` files as specified.
-- The codebase must be written in TypeScript and adhere to standard linting practices (configure ESLint/Prettier).
+**Running the Demo App:**
 
----
+To run the local Vue demo application for interactive testing:
+
+```bash
+# Run from the workspace root
+pnpm dev --filter @exerp/odin-dropin-demo
+```
+This will start the Vite development server, typically available at `http://localhost:5173`.
+
+For more detailed development commands (like isolated component testing), see [QUICK_START.md](QUICK_START.md).
+
+
+## Basic Usage (for Host Applications)
+
+Here's a minimal example of how to use the `@exerp/odin-dropin` package in a plain HTML/JavaScript setup:
+
+1.  **Installation:**
+    ```bash
+    # Using pnpm
+    pnpm add @exerp/odin-dropin
+
+    # Using npm
+    npm install @exerp/odin-dropin
+
+    # Using yarn
+    yarn add @exerp/odin-dropin
+    ```
+
+2.  **HTML:**
+    Create a container element where the drop-in will be mounted.
+    ```html
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Odin Drop-in Test</title>
+        <!-- Include your CSS here -->
+        <style>
+            /* Basic button styling for this example */
+            .odin-submit-button {
+                padding: 10px 15px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-top: 10px;
+            }
+            .odin-submit-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            #odin-container {
+                max-width: 400px;
+                padding: 20px;
+                border: 1px solid #ccc;
+                margin: 20px;
+            }
+            .error-message {
+                color: red;
+                margin-top: 10px;
+                font-size: 0.9em;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Odin Payment Form</h1>
+        <div id="odin-container">
+            <!-- The drop-in will be mounted here -->
+        </div>
+        <div id="result-display"></div>
+        <div id="error-display" class="error-message"></div>
+
+        <script type="module" src="app.js"></script>
+    </body>
+    </html>
+    ```
+
+3.  **JavaScript (`app.js`):**
+    Import the `OdinDropin` class, instantiate it with your configuration (including the ODIN Public Token fetched from your backend), and mount it.
+
+    ```javascript
+    // app.js
+    import { OdinDropin } from '@exerp/odin-dropin';
+
+    // --- Configuration ---
+    const odinContainerSelector = '#odin-container';
+    const resultDisplay = document.getElementById('result-display');
+    const errorDisplay = document.getElementById('error-display');
+
+    // IMPORTANT: You MUST fetch a short-lived ODIN Public Token
+    // from your backend securely before initializing the drop-in.
+    // Replace this with your actual token fetching logic.
+    const odinPublicToken = 'paste-your-fetched-public-token-here';
+
+    if (!odinPublicToken || odinPublicToken === 'paste-your-fetched-public-token-here') {
+        console.error("Error: ODIN Public Token is missing or placeholder.");
+        if (errorDisplay) errorDisplay.textContent = 'Configuration error: ODIN Public Token not provided.';
+        // Handle missing token appropriately (e.g., don't initialize)
+        // For this example, we stop here if the token is missing.
+    } else {
+        try {
+            // --- Initialize OdinDropin ---
+            const odinDropinInstance = new OdinDropin({
+                odinPublicToken: odinPublicToken,
+                isSingleUse: true, // Set based on your use case (true for one-time, false for saving)
+
+                // Define callbacks
+                onSubmit: (result) => {
+                    console.log('Drop-in onSubmit:', result);
+                    if (resultDisplay) {
+                        resultDisplay.textContent = `Success! Payment Method ID: ${result.paymentMethodId}`;
+                    }
+                    if (errorDisplay) errorDisplay.textContent = ''; // Clear errors
+                    // --- Next Step ---
+                    // Send result.paymentMethodId to your backend
+                    // to complete the payment or save the payment method.
+                },
+                onError: (error) => {
+                    console.error('Drop-in onError:', error);
+                    if (errorDisplay) {
+                         // Use the message provided in the error payload
+                        errorDisplay.textContent = `Error: ${error.message || 'An unknown error occurred.'}`;
+                    }
+                   if (resultDisplay) resultDisplay.textContent = ''; // Clear success message
+                },
+
+                // Optional config (e.g., for basic theme adjustments for OdinPay.js inputs)
+                // config: {
+                //   theme: { input: { base: { color: '#333' } } }
+                // }
+            });
+
+            // --- Mount the Drop-in ---
+            odinDropinInstance.mount(odinContainerSelector);
+
+            console.log('Odin Drop-in mounted successfully.');
+
+        } catch (initError) {
+            console.error("Failed to initialize OdinDropin:", initError);
+            if (errorDisplay) errorDisplay.textContent = `Initialization failed: ${initError.message || initError}`;
+        }
+    }
+    ```
+
+> **Note:** This is a basic example. Refer to the [`@exerp/odin-dropin` package's README](packages/odin-dropin/README.md) for detailed API documentation and advanced configuration options.
+
+## Local Development with External Projects
+
+If you need to test the `@exerp/odin-dropin` package within another local project (e.g., `webapp-standard`) before publishing, you can use `pnpm add /path/to/local/package` to link it.
+
+For detailed instructions on this workflow, please see [LOCAL_DEVELOPMENT_SETUP.md](LOCAL_DEVELOPMENT_SETUP.md).
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
