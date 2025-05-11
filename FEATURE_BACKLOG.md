@@ -4,6 +4,21 @@ This document lists planned features and enhancements beyond the initial MVP sco
 
 ## Core Component Enhancements
 
+*   **Error Handling:** 
+    *   **Requirement:** Implement error handling for the core component.
+    *   **Details:** Ensure that errors from `OdinPay.js` are mapped correctly to the component's error state. The Host application should be able to know what errors to expect and how to display them. See `8-JS-LIB-SOURCE-CODE.md` for more details.
+    *   **Status:** Pending design/implementation.
+
+*  **Console Logging:**
+    *   **Requirement:** Add log level to the core component.
+    *   **Details:** Implement a log level configuration option to control the verbosity of console logs. This should be passed to `OdinPay.js` and used to filter logs accordingly.
+    *   **Status:** Pending design/implementation.
+
+*   **Country Code**
+    *   **Requirement:** Support country code configuration CA/US.
+    *   **Details:** TBD.
+    *   **Status:** Pending design/implementation.
+
 *   **Optional Billing Field Support (`createCardForm`):**
     *   **Requirement:** Allow host applications to configure and render optional billing fields alongside the core Card Information and Postal Code fields.
     *   **Details:**

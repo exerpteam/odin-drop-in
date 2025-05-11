@@ -129,7 +129,7 @@ export class ExerpOdinCcForm {
 
       // Call the method to create the form
       this.renderOdinForm();
-    } catch (error) {
+    } catch (error) { // FIXME -- Expect the actual Error type here when the form is initialized or rendered.
       console.error('[Core Component] Error initializing OdinPay:', error);
       this.initializationError = (error as any)?.message || 'Failed to initialize OdinPay.';
       this.odinErrorInternal.emit({ message: this.initializationError!, code: 'INITIALIZATION_ERROR' });
@@ -203,7 +203,7 @@ export class ExerpOdinCcForm {
       console.log('[Core Component] OdinPay createCardForm called successfully.');
       this.initializationError = null;
       this.isLoading = false; // 🧑‍💻 Set loading false after createCardForm call succeeds
-    } catch (error) {
+    } catch (error) {  // FIXME -- Expect the actual Error type here.
       console.error('[Core Component] Error calling createCardForm:', error);
       this.initializationError = (error as any)?.message || 'Failed to create OdinPay card form.';
       this.odinErrorInternal.emit({ message: this.initializationError!, code: 'CREATE_FORM_ERROR' });
