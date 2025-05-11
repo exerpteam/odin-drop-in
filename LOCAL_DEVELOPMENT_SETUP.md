@@ -17,14 +17,14 @@ To make your local `@exerp/odin-dropin` available in your other project (let's c
 1.  **Navigate to your host project's directory:**
     ```bash
     # Example:
-    cd /Users/majidlaissi/dev/exerp/webapp-standard/frontend
+    cd /Users/username/dev/exerp/webapp-standard/frontend
     ```
 
 2.  **Add the local drop-in package using its path:**
     It's recommended to use the **absolute path** to the `packages/odin-dropin` directory within your workspace.
     ```bash
     # Replace the path with the actual path on your machine
-    pnpm add /Users/majidlaissi/dev/exerp/odin-dropin-workspace/packages/odin-dropin
+    pnpm add /Users/username/dev/exerp/odin-dropin-workspace/packages/odin-dropin
     ```
 
     This command will:
@@ -62,7 +62,7 @@ onMounted(() => {
 </template>
 ```
 
-**Important Note:** Every time you make changes to the source code within `/Users/majidlaissi/dev/exerp/odin-dropin-workspace/packages/odin-dropin` (or the `core` package it depends on), you **must rebuild** it for the changes to be reflected in your host application:
+**Important Note:** Every time you make changes to the source code within `/Users/username/dev/exerp/odin-dropin-workspace/packages/odin-dropin` (or the `core` package it depends on), you **must rebuild** it for the changes to be reflected in your host application:
 
 ```bash
 # Run this from the odin-dropin-workspace root

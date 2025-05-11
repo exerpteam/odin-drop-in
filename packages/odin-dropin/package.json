@@ -27,7 +27,7 @@
     "exerp"
   ],
   "author": "Exerp",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "devDependencies": {
     "typescript": "^5.8.3",
     "vite": "^6.3.5",

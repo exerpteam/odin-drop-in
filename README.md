@@ -1,7 +1,6 @@
 # Exerp ODIN Payment Drop-in Component
 
-[![License: UNLICENSED](https://img.shields.io/badge/License-UNLICENSED-lightgrey.svg)](LICENSE) <!-- Adjust if license changes -->
-<!-- TODO: Add build status badge later -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overview
 
@@ -9,16 +8,42 @@ This repository contains the source code for the Exerp ODIN Payment Drop-in, a r
 
 **Purpose:** To allow host applications (like Exerp's customer-facing web apps or partner integrations) to embed a UI component that handles the collection of sensitive payment information (Credit Card initially, ACH planned) directly from the user in a secure manner, tokenizing the details via ODIN for subsequent backend processing.
 
-## Status (as of May 2025)
+## Basic Usage (for Host Applications)
 
-*   **Phase:** MVP (Minimum Viable Product) Complete.
-*   **Supported Features:**
-    *   Secure capture of Credit Card details (Number, Expiry, CVC, Postal Code) for one-time payments.
-    *   Tokenization of card details via `OdinPay.js`.
-    *   Communication of `paymentMethodId` or errors back to the host application via callbacks.
-    *   Basic theming support for input fields (via `OdinPay.js` theme object).
-    *   Host application-driven styling for the submit button and layout.
-*   **Key Technologies:** Built as standard Web Components using [Stencil.js](https://stenciljs.com/), bundled with [Vite](https://vitejs.dev/), and managed in a [Turborepo](https://turbo.build/repo) monorepo with [pnpm](https://pnpm.io/).
+To integrate the ODIN Drop-in into your application:
+
+1.  **Installation:**
+    ```bash
+    # Using pnpm
+    pnpm add @exerp/odin-dropin
+
+    # Using npm
+    npm install @exerp/odin-dropin
+
+    # Using yarn
+    yarn add @exerp/odin-dropin
+    ```
+
+2.  **Integration:**
+    Import the `OdinDropin` class, instantiate it with your configuration (including the ODIN Public Token fetched from your backend), and mount it.
+
+    ```javascript
+    // Example: app.js
+    import { OdinDropin } from '@exerp/odin-dropin';
+
+    // Fetch your ODIN_PUBLIC_TOKEN from your backend
+    const odinPublicToken = 'YOUR_FETCHED_ODIN_PUBLIC_TOKEN';
+
+    const odinDropinInstance = new OdinDropin({
+      odinPublicToken: odinPublicToken,
+      onSubmit: (result) => { console.log('Success:', result.paymentMethodId); /* ... */ },
+      onError: (error) => { console.error('Error:', error.message); /* ... */ }
+    });
+
+    odinDropinInstance.mount('#odin-container'); // Mount to your container div
+    ```
+
+> **For detailed API documentation, advanced configuration, and complete usage examples, please see the [`@exerp/odin-dropin` package README](packages/odin-dropin/README.md).**
 
 
 ## Packages in this Monorepo
@@ -30,6 +55,8 @@ This workspace uses [pnpm workspaces](https://pnpm.io/workspaces) and includes t
 *   **`apps/demo` (`@exerp/odin-dropin-demo`)**: A simple Vue 3 + TypeScript demo application used for local development and testing of the `@exerp/odin-dropin` package. See its [README](apps/demo/README.md) for more details on its purpose.
 
 ## Getting Started for Developers (Working in this Repo)
+
+This project is a monorepo built with [Stencil.js](https://stenciljs.com/) (for core web components), [Vite](https://vitejs.dev/) (for the facade library bundling), [TypeScript](https://www.typescriptlang.org/), [Turborepo](https://turbo.build/repo), and [pnpm](https://pnpm.io/).
 
 Follow these steps to set up the development environment for this monorepo.
 
@@ -70,140 +97,6 @@ This will start the Vite development server, typically available at `http://loca
 
 For more detailed development commands (like isolated component testing), see [QUICK_START.md](QUICK_START.md).
 
-
-## Basic Usage (for Host Applications)
-
-Here's a minimal example of how to use the `@exerp/odin-dropin` package in a plain HTML/JavaScript setup:
-
-1.  **Installation:**
-    ```bash
-    # Using pnpm
-    pnpm add @exerp/odin-dropin
-
-    # Using npm
-    npm install @exerp/odin-dropin
-
-    # Using yarn
-    yarn add @exerp/odin-dropin
-    ```
-
-2.  **HTML:**
-    Create a container element where the drop-in will be mounted.
-    ```html
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Odin Drop-in Test</title>
-        <!-- Include your CSS here -->
-        <style>
-            /* Basic button styling for this example */
-            .odin-submit-button {
-                padding: 10px 15px;
-                background-color: #007bff;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                margin-top: 10px;
-            }
-            .odin-submit-button:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-            #odin-container {
-                max-width: 400px;
-                padding: 20px;
-                border: 1px solid #ccc;
-                margin: 20px;
-            }
-            .error-message {
-                color: red;
-                margin-top: 10px;
-                font-size: 0.9em;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Odin Payment Form</h1>
-        <div id="odin-container">
-            <!-- The drop-in will be mounted here -->
-        </div>
-        <div id="result-display"></div>
-        <div id="error-display" class="error-message"></div>
-
-        <script type="module" src="app.js"></script>
-    </body>
-    </html>
-    ```
-
-3.  **JavaScript (`app.js`):**
-    Import the `OdinDropin` class, instantiate it with your configuration (including the ODIN Public Token fetched from your backend), and mount it.
-
-    ```javascript
-    // app.js
-    import { OdinDropin } from '@exerp/odin-dropin';
-
-    // --- Configuration ---
-    const odinContainerSelector = '#odin-container';
-    const resultDisplay = document.getElementById('result-display');
-    const errorDisplay = document.getElementById('error-display');
-
-    // IMPORTANT: You MUST fetch a short-lived ODIN Public Token
-    // from your backend securely before initializing the drop-in.
-    // Replace this with your actual token fetching logic.
-    const odinPublicToken = 'paste-your-fetched-public-token-here';
-
-    if (!odinPublicToken || odinPublicToken === 'paste-your-fetched-public-token-here') {
-        console.error("Error: ODIN Public Token is missing or placeholder.");
-        if (errorDisplay) errorDisplay.textContent = 'Configuration error: ODIN Public Token not provided.';
-        // Handle missing token appropriately (e.g., don't initialize)
-        // For this example, we stop here if the token is missing.
-    } else {
-        try {
-            // --- Initialize OdinDropin ---
-            const odinDropinInstance = new OdinDropin({
-                odinPublicToken: odinPublicToken,
-                isSingleUse: true, // Set based on your use case (true for one-time, false for saving)
-
-                // Define callbacks
-                onSubmit: (result) => {
-                    console.log('Drop-in onSubmit:', result);
-                    if (resultDisplay) {
-                        resultDisplay.textContent = `Success! Payment Method ID: ${result.paymentMethodId}`;
-                    }
-                    if (errorDisplay) errorDisplay.textContent = ''; // Clear errors
-                    // --- Next Step ---
-                    // Send result.paymentMethodId to your backend
-                    // to complete the payment or save the payment method.
-                },
-                onError: (error) => {
-                    console.error('Drop-in onError:', error);
-                    if (errorDisplay) {
-                         // Use the message provided in the error payload
-                        errorDisplay.textContent = `Error: ${error.message || 'An unknown error occurred.'}`;
-                    }
-                   if (resultDisplay) resultDisplay.textContent = ''; // Clear success message
-                },
-
-                // Optional config (e.g., for basic theme adjustments for OdinPay.js inputs)
-                // config: {
-                //   theme: { input: { base: { color: '#333' } } }
-                // }
-            });
-
-            // --- Mount the Drop-in ---
-            odinDropinInstance.mount(odinContainerSelector);
-
-            console.log('Odin Drop-in mounted successfully.');
-
-        } catch (initError) {
-            console.error("Failed to initialize OdinDropin:", initError);
-            if (errorDisplay) errorDisplay.textContent = `Initialization failed: ${initError.message || initError}`;
-        }
-    }
-    ```
-
-> **Note:** This is a basic example. Refer to the [`@exerp/odin-dropin` package's README](packages/odin-dropin/README.md) for detailed API documentation and advanced configuration options.
 
 ## Local Development with External Projects
 

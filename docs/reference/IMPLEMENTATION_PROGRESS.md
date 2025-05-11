@@ -283,7 +283,7 @@ cd /path/to/webapp-standard/frontend
 
 # 3. Link the local drop-in package using pnpm
 #    (Using absolute path for clarity)
-pnpm add /Users/majidlaissi/dev/exerp/odin-dropin-workspace/packages/odin-dropin
+pnpm add /Users/username/dev/exerp/odin-dropin-workspace/packages/odin-dropin
 
 # 4. Add a test export to the facade's src/index.ts (in drop-in workspace)
 #    Example: export function initializeOdinDropin() { ... }
