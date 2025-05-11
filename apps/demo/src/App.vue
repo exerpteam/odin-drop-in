@@ -1,27 +1,34 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from "vue";
 import { OdinDropin } from "@exerp/odin-dropin";
+import type { OdinPayErrorPayload } from "@exerp/odin-dropin";
 
 // --- State ---
 const odinPublicToken = ref("");
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
-const errorMessage = ref<string | null>(null);
+const displayedError = ref<OdinPayErrorPayload | null>(null);
 let odinDropinInstance: OdinDropin | null = null; // To store the instance
 
 // --- Methods ---
 async function initializeAndMountDropin() {
   paymentMethodId.value = null;
-  errorMessage.value = null;
+  displayedError.value = null;
   console.log("Attempting to initialize Drop-in...");
 
   if (!odinPublicToken.value) {
-    errorMessage.value = "Please provide an ODIN Public Token.";
+    displayedError.value = {
+      code: "DEMO_APP_VALIDATION",
+      message: "Please provide an ODIN Public Token.",
+    };
     return;
   }
 
   if (!dropinContainerRef.value) {
-    errorMessage.value = "Drop-in container element not found."; // Should not happen with ref
+    displayedError.value = {
+      code: "DEMO_APP_ERROR",
+      message: "Drop-in container element not found.",
+    };
     return;
   }
 
@@ -38,19 +45,18 @@ async function initializeAndMountDropin() {
     // Actual Drop-in Initialization Logic
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken.value,
-      isSingleUse: true, // Example for MVP
+      isSingleUse: true,
       config: {
-        // theme: { primaryColor: '#007bff' } // Example theme, uncomment if you want to test
+        // theme: { primaryColor: '#007bff' } // Example theme
       },
       onSubmit: (result) => {
         console.log("Demo App onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
-        errorMessage.value = null;
+        displayedError.value = null;
       },
       onError: (error) => {
         console.error("Demo App onError:", error);
-        errorMessage.value = `Error Code: ${error.code}${error.message ? " - " + error.message : ""}${error.field ? " (Field: " + error.field + ")" : ""}`;
-        // Minimal visual feedback in demo
+        displayedError!.value = error;
         paymentMethodId.value = null;
       },
     });
@@ -60,7 +66,11 @@ async function initializeAndMountDropin() {
     console.log("Drop-in mount called on:", dropinContainerRef.value);
   } catch (error: any) {
     console.error("Failed to initialize or mount Drop-in:", error);
-    errorMessage.value = `Failed to initialize Drop-in instance: ${error.message || error}`;
+    displayedError.value = {
+      // Store a similar structured error for demo's own exceptions
+      code: "DEMO_INIT_EXCEPTION",
+      message: `Failed to initialize Drop-in instance: ${error.message || error}`,
+    };
   }
 }
 
@@ -102,8 +112,33 @@ onMounted(() => {
       <div v-if="paymentMethodId" class="success-message">
         Success! Payment Method ID: <code>{{ paymentMethodId }}</code>
       </div>
-      <div v-if="errorMessage" class="error-message">
-        Error: <code>{{ errorMessage }}</code>
+      <div v-if="displayedError" class="error-message">
+        <p v-if="displayedError.code">
+          <strong>Error Code:</strong> <code>{{ displayedError.code }}</code>
+        </p>
+        <p v-if="displayedError.message">
+          <strong>Message:</strong> <code>{{ displayedError.message }}</code>
+        </p>
+        <div v-if="displayedError.httpStatusCode">
+          <p>
+            <strong>HTTP Status:</strong>
+            <code>{{ displayedError.httpStatusCode }}</code>
+          </p>
+        </div>
+        <div
+          v-if="
+            displayedError.fieldErrors && displayedError.fieldErrors.length > 0
+          "
+        >
+          <p><strong>Field Specific Errors:</strong></p>
+          <ul style="text-align: left; margin-left: 20px">
+            <li v-for="(fe, idx) in displayedError.fieldErrors" :key="idx">
+              <code
+                ><strong>{{ fe.field }}:</strong> {{ fe.message }}</code
+              >
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>

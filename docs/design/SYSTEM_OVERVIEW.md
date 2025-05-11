@@ -120,28 +120,43 @@ When the user interacts with the form and initiates a submission:
     *   If `result.success === true` and `result.paymentMethod.id` is present:
         *   It emits an `odinSubmitInternal` event with the payload `{ paymentMethodId: result.paymentMethod.id }`.
     *   If `result.success === false`:
-        *   It extracts the error message from `result.message` (handling string or object types).
-        *   It emits an `odinErrorInternal` event with a payload like `{ message: errorMessage, code: 'ODIN_CALLBACK_ERROR' }`.
+        *   It parses the `result.message` (which can be a string, object, or array) to construct a structured error payload.
+        *   It emits an `odinErrorInternal` event. The payload is an `OdinPayErrorPayload` object containing:
+            *   `code` (e.g., `VALIDATION_ERROR_FIELDS`, `API_AUTH_ERROR`, `GENERAL_PAYMENT_ERROR`).
+            *   `message` (a general error description).
+            *   `fieldErrors?` (an array of `{field, message}` for validation issues).
+            *   `httpStatusCode?` (the HTTP status for API errors).
     *   `isLoading` state is set to `false`. Any error message might be displayed in the component's UI.
 5.  **Facade Package (`OdinDropin` class):**
     *   The event listener for `odinSubmitInternal` (or `odinErrorInternal`) is triggered.
-    *   It calls the corresponding `onSubmit` (or `onError`) callback function provided by the host application during initialization, passing the payload received from the core component's event.
+    *   It calls the corresponding `onSubmit` callback (with `{ paymentMethodId }`) or `onError` callback (with the structured `OdinPayErrorPayload`) provided by the host application during initialization.
 6.  **Host Application:**
     *   Receives the `paymentMethodId` (on success) or error details (on failure) and proceeds with its application-specific logic (e.g., sending the `paymentMethodId` to its backend for payment processing or displaying an error message to the user).
 
 ### 4.3. Error Handling Flow
 
-Errors can occur at various stages:
+Errors are now consistently reported to the host application via the `onError` callback, using a structured `OdinPayErrorPayload`.
 
-*   **Initialization Errors (Facade/Core):**
-    *   **Facade:** If the mount point is not found, the facade calls the host's `onError` callback directly.
-    *   **Core:** If `OdinPay.js` fails to load, or `OdinPay()` instantiation fails, or `createCardForm()` fails, the core component emits `odinErrorInternal`. This is caught by the facade, which then calls the host's `onError` callback. Initialization errors may also be displayed directly in the core component's UI.
-*   **Submission Errors (`OdinPay.js`):**
-    *   Validation errors (e.g., invalid card number) or processing errors from ODIN are returned in the `OdinPay.js` callback (`result.success === false`).
-    *   The core component processes this, emits `odinErrorInternal`, and the facade relays it to the host's `onError` callback. These errors might also be displayed in the core component's UI.
-*   **Unexpected Errors:** If unexpected issues arise (e.g., unexpected callback structure from `OdinPay.js`), the core component attempts to emit a relevant `odinErrorInternal` event.
+*   **Error Sources and Propagation:**
+    1.  **Initialization Errors (Core Component):**
+        *   If `OdinPay.js` fails to load, the `OdinPay()` constructor throws an error (e.g., invalid key, SDK loading failure), or `createCardForm()` fails during setup, the core component (`<exerp-odin-cc-form>`) catches these exceptions.
+        *   It then emits an `odinErrorInternal` event with a structured `OdinPayErrorPayload`. The `code` will indicate the type of initialization failure (e.g., `INIT_BADLY_FORMATTED_KEY`, `INIT_BT_SDK_FAILURE`), and the `message` will contain the original error message from `OdinPay.js` or the Stencil component.
+    2.  **Submission Errors (`OdinPay.js` Callback):**
+        *   If the `OdinPay.js` `submitButton.callback` returns `result.success === false`, the core component processes `result.message`.
+        *   **Validation Errors:** If `result.message` is an object (field-specific) or an array (general), the core component sets the `code` to `VALIDATION_ERROR_FIELDS` or `VALIDATION_ERROR_GENERAL` and populates the `fieldErrors` array in the `OdinPayErrorPayload`.
+        *   **API/General Errors:** If `result.message` is a string, the core component sets the `code` (e.g., `API_AUTH_ERROR`, `GENERAL_PAYMENT_ERROR`), potentially extracts an `httpStatusCode`, and sets the `message`.
+        *   It then emits an `odinErrorInternal` event with this structured `OdinPayErrorPayload`.
+    3.  **Facade Errors:**
+        *   If the facade (`OdinDropin` class) encounters an error before the core component is involved (e.g., mount point not found, component creation failed), it directly calls the host's `onError` callback with an `OdinPayErrorPayload` containing an appropriate `code` (e.g., `MOUNT_POINT_NOT_FOUND`) and `message`.
 
-The host application is responsible for interpreting the error payload (especially the `message` and `code`) and presenting appropriate feedback to the user.
+*   **Host Application (`onError` Callback):**
+    *   The host application receives the `OdinPayErrorPayload` object.
+    *   It should inspect the `code` for programmatic decision-making or categorization.
+    *   The `message` provides a general, human-readable summary.
+    *   If `fieldErrors` is present, the host can iterate through it to display errors next to specific form inputs or in a summary list.
+    *   If `httpStatusCode` is present, it can be used for more specific logging or conditional logic (e.g., prompting re-authentication on a 401).
+
+This standardized error structure allows the host application to more effectively handle and display errors from various stages of the drop-in's lifecycle. The internal error display within the `<exerp-odin-cc-form>` component (e.g., `initializationError`) still shows basic messages directly in the UI for immediate feedback.
 
 ## 5. Styling and Theming Strategy
 
