@@ -103,5 +103,6 @@ Immediately following the completion of the MVP scope defined above, the followi
 
 *   **Mandatory Country Code:** The component now requires a `countryCode` ('US' or 'CA') during initialization, ensuring correct regional configuration for `OdinPay.js`.
 *   **"Name on Card" Field:** Support for optionally displaying the "Name on Card" field was added via the `billingFieldsConfig.name` parameter.
+*   **Extended Billing Field Support & Customization:** Added support for all standard optional billing fields (address lines, city, state, country, email, phone). Implemented a flexible `billingFieldsConfig` to allow enabling these fields and customizing their labels and placeholders. The collected `billingInformation` is now returned in the `onSubmit` callback.  Added 'Card Information' label customization.
 
 Refer to the [Feature Backlog](../../planning/FEATURE_BACKLOG.md) and [System Overview](../SYSTEM_OVERVIEW.md) for details on these and other ongoing developments.

@@ -1,31 +1,121 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from "vue";
-import { OdinDropin } from "@exerp/odin-dropin";
-import type {
+import {
+  OdinDropin,
   OdinPayErrorPayload,
-  BillingFieldsConfig,
+  FieldCustomization,
+  OdinSubmitPayload,
 } from "@exerp/odin-dropin";
+
+type DropinBillingFieldsConfig =
+  import("@exerp/odin-dropin").BillingFieldsConfig;
 
 // --- State ---
 const odinPublicToken = ref("");
 const countryCode = ref<"US" | "CA">("US");
-const enableNameField = ref(false);
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
+const paymentResult = ref<OdinSubmitPayload | null>(null);
 const displayedError = ref<OdinPayErrorPayload | null>(null);
 let odinDropinInstance: OdinDropin | null = null; // To store the instance
 
-const currentBillingFieldsConfig = computed<BillingFieldsConfig>(() => {
-  return {
-    name: enableNameField.value,
-    // 📝 Future: add other fields here based on their refs
-    // addressLine1: enableAddressLine1.value,
-  };
+const fieldConfigs = ref<
+  Record<string, { enabled: boolean } & FieldCustomization>
+>({
+  // --- Mandatory fields only have customization ---
+  postalCode: { enabled: true, label: "", placeholder: "" },
+  cardInformation: { enabled: true, label: "", placeholder: "" },
+  // Initialize config for all fields we want to control
+  // not putting all the fields here to avoid clutter
+  name: { enabled: false, label: "", placeholder: "" },
+  // addressLine1: { enabled: false, label: "", placeholder: "" },
+  // addressLine2: { enabled: false, label: "", placeholder: "" },
+  // city: { enabled: false, label: "", placeholder: "" },
+  // state: { enabled: false, label: "", placeholder: "" },
+  // country: { enabled: false, label: "", placeholder: "" },
+  // emailAddress: { enabled: false, label: "", placeholder: "" },
+  phoneNumber: { enabled: false, label: "", placeholder: "" },
+});
+
+const DEFAULT_PLACEHOLDERS: Record<string, string> = {
+  name: "Full Name",
+  postalCode: "Postal Code",
+  addressLine1: "Street Address",
+  addressLine2: "Apartment, suite, etc.",
+  city: "City",
+  state: "State / Province",
+  country: "Country",
+  emailAddress: "you@example.com",
+  phoneNumber: "(123) 456-7890",
+  cardInformation: "", // No configurable placeholder
+};
+
+const DEFAULT_LABELS: Record<string, string> = {
+  name: "Name on Card",
+  postalCode: "Postal Code",
+  addressLine1: "Address Line 1",
+  addressLine2: "Address Line 2 (Optional)",
+  city: "City",
+  state: "State / Province",
+  country: "Country",
+  emailAddress: "Email Address",
+  phoneNumber: "Phone Number",
+  cardInformation: "Card Information",
+};
+
+function getDefaultPlaceholder(
+  fieldName: keyof typeof fieldConfigs.value
+): string {
+  return DEFAULT_PLACEHOLDERS[fieldName] || "";
+}
+function getDefaultLabel(fieldName: keyof typeof fieldConfigs.value): string {
+  return DEFAULT_LABELS[fieldName] || fieldName;
+}
+
+const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
+  const config: DropinBillingFieldsConfig = {};
+  for (const fieldName in fieldConfigs.value) {
+    const fieldConf = fieldConfigs.value[fieldName];
+
+    // Handle optional fields
+    if (fieldName !== "postalCode" && fieldName !== "cardInformation") {
+      if (fieldConf.enabled) {
+        // If enabled, check if there's customization
+        if (fieldConf.label || fieldConf.placeholder) {
+          // Pass customization object
+          config[fieldName] = {
+            label: fieldConf.label || undefined, // Pass undefined if empty string
+            placeholder: fieldConf.placeholder || undefined, // Pass undefined if empty string
+          };
+        } else {
+          // Pass true for default behavior
+          config[fieldName] = true;
+        }
+      }
+      // If not enabled, the key is simply omitted from 'config'
+    }
+    // Handle mandatory fields (postalCode, cardInformation) - only pass customization if present
+    else {
+      if (fieldConf.label || fieldConf.placeholder) {
+        config[fieldName] = {
+          label: fieldConf.label || undefined,
+          placeholder: fieldConf.placeholder || undefined,
+        };
+      }
+      // If no customization, omit the key (no 'true' needed for mandatory fields)
+    }
+  }
+  console.log(
+    "[DemoApp] Generated billingFieldsConfig:",
+    JSON.stringify(config)
+  ); // Debug log
+  return config;
 });
 
 // --- Methods ---
 async function initializeAndMountDropin() {
   paymentMethodId.value = null;
+  paymentResult.value = null;
   displayedError.value = null;
   console.log("Attempting to initialize Drop-in...");
 
@@ -73,20 +163,19 @@ async function initializeAndMountDropin() {
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken.value,
       countryCode: countryCode.value,
-      isSingleUse: true,
+      isSingleUse: true, // TODO: We should add a toggle for this later
       billingFieldsConfig: currentBillingFieldsConfig.value,
-      config: {
-        // theme: { primaryColor: '#007bff' } // Example theme
-      },
       onSubmit: (result) => {
         console.log("Demo App onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
+        paymentResult.value = result;
         displayedError.value = null;
       },
       onError: (error) => {
         console.error("Demo App onError:", error);
         displayedError!.value = error;
         paymentMethodId.value = null;
+        paymentResult.value = null;
       },
     });
 
@@ -117,6 +206,7 @@ onMounted(() => {
     <h1>Exerp ODIN Drop-in Demo (Vue + TS)</h1>
 
     <div class="config-section">
+      <h2>Configuration</h2>
       <div>
         <label for="publicToken">ODIN Public Token:</label>
         <input
@@ -135,17 +225,71 @@ onMounted(() => {
         </select>
       </div>
 
-      <div style="margin-top: 15px">
-        <label
-          for="enableNameField"
-          style="display: inline-block; margin-right: 10px"
-        >
-          Enable "Name on Card" field:
-        </label>
-        <input type="checkbox" id="enableNameField" v-model="enableNameField" />
-      </div>
+      <h3
+        style="
+          margin-top: 25px;
+          margin-bottom: 15px;
+          border-top: 1px solid #eee;
+          padding-top: 20px;
+        "
+      >
+        Billing Field Configuration:
+      </h3>
 
-      <!-- 📝 Majid: Future fields like isSingleUse toggle and other billing fields will go here or in a sub-section -->
+      <template v-for="(fieldData, fieldName) in fieldConfigs" :key="fieldName">
+        <div class="field-config-item">
+          <h4>
+            {{
+              fieldName === "name"
+                ? "Name on Card"
+                : fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
+            }}
+            Field ('{{ fieldName }}')
+          </h4>
+
+          <div
+            class="field-config-row"
+            v-if="fieldName !== 'postalCode' && fieldName !== 'cardInformation'"
+          >
+            <label :for="`enable-${fieldName}`">Enable:</label>
+            <input
+              type="checkbox"
+              :id="`enable-${fieldName}`"
+              v-model="fieldData.enabled"
+            />
+          </div>
+
+          <div class="field-config-row">
+            <label :for="`label-${fieldName}`">Custom Label:</label>
+            <input
+              type="text"
+              :id="`label-${fieldName}`"
+              v-model="fieldData.label"
+              :placeholder="`Default: ${getDefaultLabel(fieldName as keyof typeof fieldConfigs)}`"
+              :disabled="
+                fieldName !== 'postalCode' &&
+                fieldName !== 'cardInformation' &&
+                !fieldData.enabled
+              "
+            />
+          </div>
+
+          <div class="field-config-row" v-if="fieldName !== 'cardInformation'">
+            <label :for="`placeholder-${fieldName}`">Custom Placeholder:</label>
+            <input
+              type="text"
+              :id="`placeholder-${fieldName}`"
+              v-model="fieldData.placeholder"
+              :placeholder="`Default: ${getDefaultPlaceholder(fieldName as keyof typeof fieldConfigs)}`"
+              :disabled="
+                fieldName !== 'postalCode' &&
+                fieldName !== 'cardInformation' &&
+                !fieldData.enabled
+              "
+            />
+          </div>
+        </div>
+      </template>
 
       <button @click="initializeAndMountDropin" style="margin-top: 20px">
         Initialize & Mount Drop-in
@@ -162,8 +306,33 @@ onMounted(() => {
     <div class="results-section">
       <h2>Results:</h2>
       <div v-if="paymentMethodId" class="success-message">
-        Success! Payment Method ID: <code>{{ paymentMethodId }}</code>
+        <p>
+          Success! Payment Method ID: <code>{{ paymentMethodId }}</code>
+        </p>
+
+        <div
+          v-if="paymentResult?.billingInformation"
+          style="
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #9ae6b4;
+          "
+        >
+          <strong>Billing Information Received:</strong>
+          <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.billingInformation, null, 2) }}</code></pre>
+        </div>
+        <div
+          v-else
+          style="
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #9ae6b4;
+          "
+        >
+          <p><em>No billing information returned in result.</em></p>
+        </div>
       </div>
+
       <div v-if="displayedError" class="error-message">
         <p v-if="displayedError.code">
           <strong>Error Code:</strong> <code>{{ displayedError.code }}</code>
@@ -274,6 +443,74 @@ h1 {
   background-color: #38a169; /* Darker green */
 }
 
+/* 🧑‍💻 Add styles for field config layout */
+.config-section h2,
+.config-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2d3748;
+  font-weight: 600;
+  border-bottom: 1px solid #edf2f7;
+  padding-bottom: 10px;
+}
+.config-section h3 {
+  font-size: 1.1em;
+}
+.field-config-item {
+  border: 1px solid #e2e8f0;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+.field-config-item h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1em;
+  font-weight: 600;
+  color: #4a5568;
+}
+.field-config-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.field-config-row label {
+  width: 150px; /* Fixed width for alignment */
+  min-width: 150px;
+  margin-right: 10px;
+  margin-bottom: 0; /* Override default block label margin */
+  text-align: right;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+.field-config-row input[type="text"] {
+  flex-grow: 1;
+  margin-bottom: 0; /* Override default input margin */
+  padding: 8px 10px; /* Smaller padding */
+  font-size: 0.95em;
+}
+.field-config-row input[type="checkbox"] {
+  margin-left: 0;
+  margin-right: 5px; /* Space after checkbox */
+}
+/* --- Adjustments for responsiveness --- */
+@media (max-width: 600px) {
+  .field-config-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .field-config-row label {
+    width: auto;
+    min-width: auto;
+    text-align: left;
+    margin-bottom: 5px;
+  }
+  .field-config-row input[type="text"] {
+    width: 100%; /* Full width on small screens */
+  }
+}
+
 .dropin-section h2,
 .results-section h2 {
   margin-top: 0;
@@ -303,6 +540,18 @@ label[for="enableNameField"] + input[type="checkbox"] {
   word-break: break-all;
   color: #4a5568;
   font-size: 0.9em;
+}
+
+.results-section .success-message pre code {
+  display: block; /* Make it take the full width for text-align */
+  text-align: left; /* Align JSON to the left */
+  white-space: pre-wrap; /* Ensure wrapping */
+  word-break: break-all; /* Ensure long strings break */
+  background-color: #e6fffa; /* Slightly different background for the pre block */
+  padding: 10px;
+  border: 1px solid #c6f6d5;
+  border-radius: 4px;
+  margin-top: 5px;
 }
 
 .success-message {

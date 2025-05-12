@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html dir="ltr" lang="en">
   <head>
     <meta charset="utf-8" />
@@ -6,20 +6,100 @@
     <title>Stencil Component Test</title>
     <script type="module" src="/build/exerp-odin-dropin-core.esm.js"></script>
     <script nomodule src="/build/exerp-odin-dropin-core.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+        padding: 20px;
+        line-height: 1.5;
+        color: #333;
+        background-color: #f9f9f9;
+      }
+      h1 {
+        color: #1a1a1a;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+      exerp-odin-cc-form {
+        display: block; /* Ensure it behaves like a block */
+        max-width: 450px; /* Limit width */
+        margin: 20px auto; /* Center and add margin */
+        padding: 25px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      hr {
+        margin-top: 30px;
+        margin-bottom: 30px;
+        border: 0;
+        border-top: 1px solid #eee;
+      }
+      p {
+        color: #555;
+        font-size: 0.95em;
+      }
+      /* Add some margin to the component's internal labels/containers for better spacing */
+      exerp-odin-cc-form .odin-field-container label {
+        font-weight: 600;
+        font-size: 0.9em;
+        color: #444;
+      }
+      exerp-odin-cc-form .odin-input {
+        border: 1px solid #eee; /* Add a faint border to see the container */
+        margin-top: 3px; /* Space between label and input container */
+        /* Min height is handled by OdinPay styles usually, but useful visual */
+        min-height: 38px;
+      }
+      /* Style the default button appearance slightly */
+      exerp-odin-cc-form .odin-submit-button {
+        padding: 10px 18px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+      exerp-odin-cc-form .odin-submit-button:disabled {
+        background-color: #aaa;
+      }
+      /* Style the footer */
+      exerp-odin-cc-form .odin-form-footer {
+        font-size: 0.85em;
+        color: #777;
+        margin-top: 25px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+      }
+      /* Style the error message container */
+      exerp-odin-cc-form .odin-error-message-container {
+        background-color: #fff5f5;
+        border-color: #feb2b2;
+        color: #c53030;
+      }
+    </style>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const form = document.querySelector('exerp-odin-cc-form');
         if (form) {
           // Stencil props can be set directly on the element instance
-          form.billingFieldsConfig = { name: true };
+          form.billingFieldsConfig = {
+            cardInformation: { label: 'Credit Card Details' }, // Customize Card Info Label
+            name: { label: 'Cardholder Full Name', placeholder: 'Enter name AS ON CARD' },
+            addressLine1: true, // Default placeholder: 'Street Address'
+            city: { placeholder: 'Your Town/City' }, // Default label: 'City'
+            postalCode: { placeholder: 'ZIP / Postal' }, // Customize mandatory field placeholder
+          };
+          form.odinPublicToken =
+            'eyJhcGlFbmRwb2ludCI6Imh0dHBzOi8vYXBpLm9kaW4tc2FuZGJveC5jb20iLCJiYXNpc1RoZW9yeUtleSI6ImtleV90ZXN0X3VzX3B1Yl81dXRuQ1NDM05IRlhzalZMdEx0OUpjIiwidG9rZW4iOiJleUpyYVdRaU9pSmlNakpYVGxoWFNUVkVkVTlWTldOSk1ERkhWRkY1TWs1V1oyeHVUVXgxVUdWUFJGVnVjMjFOTkdNMFBTSXNJbUZzWnlJNklsSlRNalUySW4wLmV5SnpkV0lpT2lKcU5tbHdjbVJtWld0dU1tUnRhVEpxWjJFNGRXMDBjbkpxSWl3aWRHOXJaVzVmZFhObElqb2lZV05qWlhOeklpd2ljMk52Y0dVaU9pSm9kSFJ3Y3pwY0wxd3ZZWEJwTG05a2FXNHRjMkZ1WkdKdmVDNWpiMjFjTDJOeVpXRjBaVHB3WVhsdFpXNTBYMjFsZEdodlpITWlMQ0poZFhSb1gzUnBiV1VpT2pFM05EY3dOelUzTXprc0ltbHpjeUk2SW1oMGRIQnpPbHd2WEM5amIyZHVhWFJ2TFdsa2NDNTFjeTFsWVhOMExURXVZVzFoZW05dVlYZHpMbU52YlZ3dmRYTXRaV0Z6ZEMweFh6SnhOamQzTUdnd1Z5SXNJbVY0Y0NJNk1UYzBOekEzTmpNek9Td2lhV0YwSWpveE56UTNNRGMxTnpNNUxDSjJaWEp6YVc5dUlqb3lMQ0pxZEdraU9pSm1OMkppTnpoak5DMHhZVGRqTFRSbE9XRXRZVEV5WXkxa1pERTBOemMzTnpFNVpEY2lMQ0pqYkdsbGJuUmZhV1FpT2lKcU5tbHdjbVJtWld0dU1tUnRhVEpxWjJFNGRXMDBjbkpxSW4wLm1OZ3lEejItbjBrVk5wdkM0OGhKM3AtQXFDaW9LemVJYVktUjdfenc0bFpZd0YzN3pjSUR2TjA3cUoxWFFNWUNzYkhCVUszWXFnejZPRGhUYnpZZkZsWGtWSTAybnJqN1RCaFZka182QlZLMG9vVUM5QTZSM0pOT0dtM2VXVGlMME92RFFsaDl4VExfSFNwaWRZY2RCZlp1aDBoekhjRTJRX2ZSa1V6aEtKazVfNktQcWJZeXRwT0djQ0tncmw2YUdITnB3OTlvVVI2anVtUjd5d3NNTkhlVU91eHNyazU1YXVVZ2lPZVdPWHZ2RkVBTHZWaktpNnpCS1pZNEMyT3NrbzY5VF9kbnJmZnp3Q0VvalQ0N0FLVXNpaEtSTlpKM2YwVzFKZFdKTXMtUWlnR1FibDAzaV91VHg5ajFENUNjRzdldUtsamMyTVBZdDVmOXd5bC1DZyJ9'; // Use a valid test token if possible
         }
       });
     </script>
   </head>
   <body>
     <h1>Testing exerp-odin-cc-form</h1>
-    <exerp-odin-cc-form odin-public-token="test-token-for-core-dev-server" country-code="US"></exerp-odin-cc-form>
-    <hr>
+    <exerp-odin-cc-form country-code="US"></exerp-odin-cc-form>
+    <hr />
     <p>Try changing country-code to "CA" if you have a token that supports it, or observe if OdinPay.js changes behavior (e.g. postal code field label/validation).</p>
     <p>Component should render above this line with basic structure and styling.</p>
   </body>

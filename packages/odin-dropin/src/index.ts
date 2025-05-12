@@ -1,33 +1,27 @@
 import "@exerp/odin-dropin-core/exerp-odin-cc-form";
-import {
-  OdinPayErrorPayload as CoreOdinPayErrorPayload, // Use an alias to avoid name clash if needed locally
-  OdinPaySubmitPayload,
+import { OdinPaySubmitPayload } from "../../core/dist/types/components";
+
+import type {
+  OdinPayErrorPayload as CoreOdinPayErrorPayload,
+  OdinPaySubmitPayload as CoreOdinPaySubmitPayload,
   BillingFieldsConfig as CoreBillingFieldsConfig,
-} from "../../core/dist/types/components";
-
-// This is for general drop-in config, not specific OdinPay fields yet
-interface OdinDropinConfigOptions {
-  theme?: { primaryColor?: string; fontBase?: string };
-  // 📝 Future: we might move billingFieldsConfig under this 'config' object if it makes sense.
-  // For now, keeping it at the top level of OdinDropinInitializationParams.
-}
-
-interface OdinSubmitPayload {
-  paymentMethodId: string;
-  // other relevant state?
-}
+  OdinPayBillingInformation as CoreOdinPayBillingInformation,
+  FieldCustomization as CoreFieldCustomization,
+} from "../../core/dist/types/components/exerp-odin-cc-form/exerp-odin-cc-form"; 
 
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
   countryCode: "US" | "CA";
   isSingleUse?: boolean;
   /**
-   * Optional configuration to enable and manage additional billing fields.
-   * Example: { name: true } to enable the "Name on Card" field.
+   * Optional configuration to enable and customize billing fields.
+   * Fields can be enabled with `true` (using default label/placeholder)
+   * or with a `FieldCustomization` object ({ label?: string; placeholder?: string; }).
+   * Example: { name: true, addressLine1: { label: 'Street Address' } }
+   * postalCode/cardInformation can only receive customization.
    */
-  billingFieldsConfig?: CoreBillingFieldsConfig;
-  config?: OdinDropinConfigOptions;
-  onSubmit: (result: OdinSubmitPayload) => void;
+  billingFieldsConfig?: CoreBillingFieldsConfig; //
+  onSubmit: (result: CoreOdinPaySubmitPayload) => void;
   onError: (error: CoreOdinPayErrorPayload) => void;
 }
 
@@ -103,17 +97,17 @@ export class OdinDropin {
       }
 
       if (this.params.billingFieldsConfig) {
-        this.odinCcFormComponent.billingFieldsConfig = this.params.billingFieldsConfig;
+        this.odinCcFormComponent.billingFieldsConfig =
+          this.params.billingFieldsConfig;
       }
 
       console.log(
-        "[Facade] Component instance after setting props:",
-        this.odinCcFormComponent,
-        "token:",
+        "[Facade] Component instance props set. Token:",
         this.odinCcFormComponent.odinPublicToken,
-        "countryCode:",
+        "Country:",
         this.odinCcFormComponent.countryCode,
-        "billingFieldsConfig:", this.odinCcFormComponent.billingFieldsConfig
+        "Billing Config:",
+        JSON.stringify(this.odinCcFormComponent.billingFieldsConfig)
       );
 
       this.odinCcFormComponent.addEventListener(
@@ -128,7 +122,8 @@ export class OdinDropin {
 
       mountPoint.appendChild(this.odinCcFormComponent);
       console.log(
-        "exerp-odin-cc-form mounted to", mountPoint,
+        "exerp-odin-cc-form mounted to",
+        mountPoint,
         "with token, countryCode, isSingleUse, and billingFields config."
       );
     } else {
@@ -190,5 +185,11 @@ export function initializeOdinDropin(): string {
   return "Odin Drop-in Initialized (Test)";
 }
 
-export type { CoreOdinPayErrorPayload as OdinPayErrorPayload };
-export type { CoreBillingFieldsConfig as BillingFieldsConfig };
+export type {
+  CoreOdinPayErrorPayload as OdinPayErrorPayload,
+  CoreBillingFieldsConfig as BillingFieldsConfig,
+  CoreOdinPayBillingInformation as OdinPayBillingInformation,
+  CoreFieldCustomization as FieldCustomization,
+  // Export the core submit payload type directly or create a facade-specific one if needed
+  CoreOdinPaySubmitPayload as OdinSubmitPayload,
+};

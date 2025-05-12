@@ -4,10 +4,10 @@ import { Component, h, Prop, State, Watch, Event, EventEmitter } from '@stencil/
 //    or use 'any' for now.
 declare const OdinPay: any;
 
-// 🧑‍💻 Define payload interfaces for events (can be moved/shared later)
+// Define payload interfaces for events (can be moved/shared later)
 export interface OdinPaySubmitPayload {
   paymentMethodId: string;
-  // any other relevant data from OdinPay result.paymentMethod
+  billingInformation?: OdinPayBillingInformation;
 }
 
 export interface OdinPayFieldError {
@@ -23,10 +23,56 @@ export interface OdinPayErrorPayload {
   rawError?: any; // Optional: For debugging, could include the original result.message
 }
 
-export interface BillingFieldsConfig {
-  name?: boolean; // For "Name on Card"
-  // 📝 We'll add more fields here later: addressLine1, etc.
+// Configuration for enabling and customizing fields
+export type BillingFieldsConfig = {
+  // Optional fields can be true (enable with defaults) or customized
+  [FieldName in OptionalBillingFieldName]?: boolean | FieldCustomization;
+} & {
+  // Mandatory fields like postalCode can only be customized (they are always implicitly 'true')
+  postalCode?: FieldCustomization;
+  cardInformation?: FieldCustomization;
+};
+
+// Represents customization for a single field
+export interface FieldCustomization {
+  label?: string;
+  placeholder?: string;
 }
+
+// Define the names of fields that can be optionally shown/customized
+type OptionalBillingFieldName = 'name' | 'addressLine1' | 'addressLine2' | 'city' | 'state' | 'country' | 'emailAddress' | 'phoneNumber';
+
+// Nested address object structure
+export interface OdinPayBillingAddress {
+  addressLine1?: string; // Present if configured, "" if empty
+  addressLine2?: string; // Present if configured, "" if empty
+  city?: string; // Present if configured, "" if empty
+  state?: string; // Present if configured, "" if empty
+  postalCode?: string; // Present if configured, "" if empty
+  country?: string; // Present if configured, "" if empty
+}
+
+// Top-level billing information structure
+export interface OdinPayBillingInformation {
+  name?: string; // Present if configured, "" if empty
+  emailAddress?: string; // Present if configured, "" if empty
+  phoneNumber?: string; // Present if configured, "" if empty
+  address?: OdinPayBillingAddress; // Present if ANY address field was configured
+}
+
+// Define default labels and placeholders
+const DEFAULT_FIELD_TEXT: { [key: string]: FieldCustomization } = {
+  cardInformation: { label: 'Card Information', placeholder: undefined },
+  name: { label: 'Name on Card', placeholder: 'Full Name' },
+  postalCode: { label: 'Postal Code', placeholder: 'Postal Code' }, // Placeholder might vary by country in OdinPay.js itself
+  addressLine1: { label: 'Address Line 1', placeholder: 'Street Address' },
+  addressLine2: { label: 'Address Line 2 (Optional)', placeholder: 'Apartment, suite, etc.' },
+  city: { label: 'City', placeholder: 'City' },
+  state: { label: 'State / Province', placeholder: 'State / Province' }, // Label accommodates US/CA
+  country: { label: 'Country', placeholder: 'Country' }, // Placeholder might be less useful if OdinPay renders a dropdown
+  emailAddress: { label: 'Email Address', placeholder: 'you@example.com' },
+  phoneNumber: { label: 'Phone Number', placeholder: '(123) 456-7890' },
+};
 
 @Component({
   tag: 'exerp-odin-cc-form',
@@ -55,14 +101,38 @@ export class ExerpOdinCcForm {
   @Prop() countryCode!: 'US' | 'CA'; // Making it mandatory and specific
 
   /**
-   * Optional configuration to enable and manage additional billing fields.
-   * Example: { name: true } to enable the "Name on Card" field.
+   * Optional configuration to enable and customize billing fields.
+   * This object determines which optional billing fields are rendered and allows
+   * overriding their default labels and placeholders.
+   *
+   * - For optional fields (e.g., `name`, `addressLine1`):
+   *   - `true`: Enables the field with default label and placeholder.
+   *   - `FieldCustomization` object (e.g., `{ label?: 'Custom Label', placeholder?: 'Custom Hint' }`):
+   *     Enables the field and applies the specified customizations.
+   *   - If a field key is omitted, the field is not rendered.
+   *
+   * - For fields that are always structurally part of the form but can be customized
+   *   (e.g., `postalCode` label/placeholder, `cardInformation` label):
+   *   - Provide a `FieldCustomization` object to override default texts.
+   *
+   * Example:
+   * `{
+   *   name: true, // Enable 'Name on Card' with defaults
+   *   addressLine1: { label: 'Street Address Line 1' }, // Custom label for address
+   *   city: { placeholder: 'Enter your city here' }, // Custom placeholder for city
+   *   postalCode: { label: 'Zip/Postal' } // Custom label for postal code
+   * }`
+   *
+   * Refer to the `BillingFieldsConfig` and `FieldCustomization` type definitions
+   * within this file for the exact structure and available field names.
    */
   @Prop() billingFieldsConfig?: BillingFieldsConfig;
 
   /**
    * Fired when OdinPay.js successfully returns a payment method token
-   * after the user submits the form. Contains the paymentMethodId.
+   * after the user submits the form. The event detail contains the
+   * `paymentMethodId` and, if applicable, the `billingInformation`
+   * collected from the form.
    */
   @Event() odinSubmitInternal!: EventEmitter<OdinPaySubmitPayload>;
 
@@ -84,6 +154,38 @@ export class ExerpOdinCcForm {
   private postalCodeId = `${this.componentId}-postal-code`;
   private odinSubmitButtonId = `${this.componentId}-odin-submit-button`;
   private visibleSubmitButtonId = `${this.componentId}-visible-submit-button`;
+
+  private addressLine1Id = `${this.componentId}-address-line1`;
+  private addressLine2Id = `${this.componentId}-address-line2`;
+  private cityId = `${this.componentId}-city`;
+  private stateId = `${this.componentId}-state`;
+  private countryId = `${this.componentId}-country`;
+  private emailAddressId = `${this.componentId}-email-address`;
+  private phoneNumberId = `${this.componentId}-phone-number`;
+
+  /** Helper to check if a field should be rendered */
+  private isFieldEnabled(fieldName: keyof BillingFieldsConfig): boolean {
+    return !!this.billingFieldsConfig?.[fieldName];
+  }
+
+  /** Helper to get the customization object for a field */
+  private getFieldCustomization(fieldName: keyof BillingFieldsConfig): FieldCustomization | undefined {
+    const configValue = this.billingFieldsConfig?.[fieldName];
+    return typeof configValue === 'object' ? configValue : undefined;
+  }
+
+  /** Helper to get the label for a field */
+  private getLabel(fieldName: keyof BillingFieldsConfig): string {
+    const customLabel = this.getFieldCustomization(fieldName)?.label;
+    return customLabel ?? DEFAULT_FIELD_TEXT[fieldName]?.label ?? fieldName; // Fallback to fieldName if no default
+  }
+
+  /** Helper to get the placeholder for a field */
+  private getPlaceholder(fieldName: keyof BillingFieldsConfig): string | undefined {
+    const customPlaceholder = this.getFieldCustomization(fieldName)?.placeholder;
+    // Return custom placeholder, default placeholder, or undefined if neither exists
+    return customPlaceholder ?? DEFAULT_FIELD_TEXT[fieldName]?.placeholder ?? undefined;
+  }
 
   private loadScript(url: string, id: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -269,28 +371,49 @@ export class ExerpOdinCcForm {
     }
 
     console.log(`[Core Component] Attempting to create card form. isSingleUse: ${this.isSingleUse}`);
-    console.log(`[Core Component] Targeting cardInfoId: #${this.cardInfoId}, postalCodeId: #${this.postalCodeId}, submitButtonId: #${this.odinSubmitButtonId}`);
 
+    // --- Start Dynamically Building Fields Config ---
     const odinPayFields: any = {
-      // Start with base fields
+      // Base required fields for OdinPay card form
       cardInformation: {
         selector: this.cardInfoId,
+        // ariaLabel: this.getAriaLabel('cardInformation'), // Future: Add Aria Label customization
       },
       postalCode: {
         selector: this.postalCodeId,
+        placeholder: this.getPlaceholder('postalCode'), // Use helper for placeholder
+        // ariaLabel: this.getAriaLabel('postalCode'), // Future
       },
     };
 
-    // Conditionally add 'name' field if configured
-    if (this.billingFieldsConfig?.name) {
-      odinPayFields.name = {
-        selector: this.nameOnCardId,
-        placeholder: 'Name on Card', // Optional: OdinPay might have its own default
-        // ariaLabel: "Name on Card", // Optional
-      };
-    }
+    // Define the mapping from our config keys to the OdinPay field keys and their container IDs
+    const optionalFieldMapping: { [key in OptionalBillingFieldName]: string } = {
+      name: this.nameOnCardId,
+      addressLine1: this.addressLine1Id,
+      addressLine2: this.addressLine2Id,
+      city: this.cityId,
+      state: this.stateId,
+      country: this.countryId,
+      emailAddress: this.emailAddressId,
+      phoneNumber: this.phoneNumberId,
+    };
 
-    console.log('[Core Component] Final fields object for OdinPay:', odinPayFields);
+    // Iterate over the mapping to add configured optional fields
+    for (const fieldName in optionalFieldMapping) {
+      // Check if the field is enabled in our component's config
+      if (this.isFieldEnabled(fieldName as OptionalBillingFieldName)) {
+        const fieldId = optionalFieldMapping[fieldName as OptionalBillingFieldName];
+        // Add the field config to the object OdinPay expects
+        odinPayFields[fieldName] = {
+          selector: fieldId,
+          placeholder: this.getPlaceholder(fieldName as OptionalBillingFieldName), // Get custom/default placeholder
+          // ariaLabel: this.getAriaLabel(fieldName), // Future
+        };
+      }
+    }
+    // --- End Dynamically Building Fields Config ---
+
+    console.log('[Core Component] Final fields object being passed to OdinPay.createCardForm:', JSON.stringify(odinPayFields, null, 2));
 
     try {
       this.odinPayInstance.createCardForm({
@@ -298,12 +421,29 @@ export class ExerpOdinCcForm {
         submitButton: {
           selector: this.odinSubmitButtonId,
           callback: (result: any) => {
+            // Note: result is still 'any' as it comes from external lib
             console.log('[Core Component] OdinPay submit callback RAW result:', JSON.stringify(result, null, 2));
 
             if (result && result.success === true && result.paymentMethod && result.paymentMethod.id) {
               console.log('[Core Component] Success! PaymentMethodID:', result.paymentMethod.id);
+
+              // --- Extract billingInformation ---
+              let billingInfo: OdinPayBillingInformation | undefined = undefined;
+              if (result.paymentMethod.billingInformation) {
+                // We assume OdinPay.js returns data matching our OdinPayBillingInformation interface
+                // No complex mapping needed here if the structure report was accurate.
+                billingInfo = result.paymentMethod.billingInformation as OdinPayBillingInformation;
+                console.log('[Core Component] Extracted billingInformation:', JSON.stringify(billingInfo, null, 2));
+              } else {
+                console.log('[Core Component] No billingInformation found in OdinPay result.paymentMethod.');
+              }
+              // --- End Extracting billingInformation ---
+
               // Emit success event
-              this.odinSubmitInternal.emit({ paymentMethodId: result.paymentMethod.id });
+              this.odinSubmitInternal.emit({
+                paymentMethodId: result.paymentMethod.id,
+                billingInformation: billingInfo,
+              });
             } else if (result && result.success === false) {
               // Handle error based on result.message
               console.error('[Core Component] Error from OdinPay callback. Raw result.message:', result.message);
@@ -439,38 +579,96 @@ export class ExerpOdinCcForm {
 
   render() {
     const isButtonDisabled = this.isLoading || !this.odinFormRenderedBySDK || !!this.initializationError;
+
+    // 🧑‍💻 Define the order of fields for rendering
+    const fieldRenderOrder: (keyof BillingFieldsConfig)[] = [
+      'name',
+      'addressLine1',
+      'addressLine2',
+      'city',
+      'state',
+      'postalCode', // Keep postal code near address fields
+      'country',
+      'emailAddress',
+      'phoneNumber',
+    ];
+
     return (
       <div class="exerp-odin-dropin-container">
+        {/* Initialization Error Display */}
         {this.initializationError && (
-          <div style={{ color: 'red', marginBottom: '10px', border: '1px solid red', padding: '5px' }}>Initialization Error: {this.initializationError}</div>
-        )}
-
-        {this.billingFieldsConfig?.name && (
-          <div class="odin-field-container">
-            <label htmlFor={this.nameOnCardId}>Name on Card</label>
-            <div id={this.nameOnCardId} class="odin-input"></div>
+          <div class="odin-error-message-container" role="alert">
+            Initialization Error: {this.initializationError}
           </div>
         )}
 
+        {/* Card Information */}
         <div class="odin-field-container">
-          <label htmlFor={this.cardInfoId}>Card Information</label>
+          <label htmlFor={this.cardInfoId}>{this.getLabel('cardInformation')}</label>
           <div id={this.cardInfoId} class="odin-input"></div>
         </div>
 
-        <div class="odin-field-container">
-          <label htmlFor={this.postalCodeId}>Postal Code</label>
-          <div id={this.postalCodeId} class="odin-input"></div>
-        </div>
+        {/* Dynamically Rendered Billing Fields */}
+        {fieldRenderOrder.map(fieldName => {
+          // Always render the container for postalCode as OdinPay needs it, but respect custom label/placeholder
+          if (fieldName === 'postalCode') {
+            return (
+              <div class="odin-field-container" key={fieldName}>
+                <label htmlFor={this.postalCodeId}>{this.getLabel(fieldName)}</label>
+                <div id={this.postalCodeId} class="odin-input"></div>
+              </div>
+            );
+          }
+          // For other fields, check if enabled in config
+          else if (this.isFieldEnabled(fieldName)) {
+            // Determine the correct ID based on field name
+            let fieldId: string;
+            switch (fieldName) {
+              case 'name':
+                fieldId = this.nameOnCardId;
+                break;
+              case 'addressLine1':
+                fieldId = this.addressLine1Id;
+                break;
+              case 'addressLine2':
+                fieldId = this.addressLine2Id;
+                break;
+              case 'city':
+                fieldId = this.cityId;
+                break;
+              case 'state':
+                fieldId = this.stateId;
+                break;
+              case 'country':
+                fieldId = this.countryId;
+                break;
+              case 'emailAddress':
+                fieldId = this.emailAddressId;
+                break;
+              case 'phoneNumber':
+                fieldId = this.phoneNumberId;
+                break;
+              default:
+                fieldId = `${this.componentId}-${fieldName}`; // Fallback ID
+            }
 
+            return (
+              <div class="odin-field-container" key={fieldName}>
+                <label htmlFor={fieldId}>{this.getLabel(fieldName)}</label>
+                <div id={fieldId} class="odin-input"></div>
+              </div>
+            );
+          }
+          return null; // Don't render if not enabled
+        })}
+
+        {/* Submit Area */}
         <div class="odin-submit-container">
           <button id={this.visibleSubmitButtonId} class="odin-submit-button" type="button" disabled={isButtonDisabled} onClick={this.handleVisibleSubmitClick}>
             {this.isLoading ? 'Loading...' : 'Pay'}
           </button>
-
-          {/* HIDDEN Button - OdinPay targets this */}
           <button id={this.odinSubmitButtonId} type="button" style={{ display: 'none' }} aria-hidden="true"></button>
-
-          <div class="odin-form-footer">Secured by ODIN Pay {/* TODO: Maybe make text configurable later? */}</div>
+          <div class="odin-form-footer">Secured by ODIN Pay</div>
         </div>
       </div>
     );

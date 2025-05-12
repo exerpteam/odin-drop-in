@@ -21,18 +21,27 @@ This document lists planned features and enhancements beyond the initial MVP sco
         *   Core component conditionally renders the field container and configures `OdinPay.createCardForm()`.
     *   **Status:** Implemented for `name` field.
 
-*   **Optional Billing Field Support (`createCardForm`): Address Fields, etc.**
+*   ✅ **Optional Billing Field Support (`createCardForm`): Address Fields, etc.**
     *   **Requirement:** Allow host applications to configure and render other optional billing fields.
     *   **Details:**
-        *   Extend `BillingFieldsConfig` to include `addressLine1`, `addressLine2`, `city`, `state`, `emailAddress`, `phoneNumber`.
-        *   Core Stencil component needs to render necessary containers and pass config to `OdinPay.createCardForm()`.
-        *   **Verify and document the structure of the `billingInformation` object (or equivalent) within the `result.paymentMethod` payload returned by `OdinPay.js` when these fields are successfully submitted. Ensure the facade's `onSubmit` callback can potentially expose this data if needed by the host.** 
-    *   **Status:** Pending design/implementation for additional fields.
+        *   Extended `BillingFieldsConfig` to include `addressLine1`, `addressLine2`, `city`, `state`, `country`, `emailAddress`, `phoneNumber`.
+        *   Core Stencil component now renders necessary containers and passes config to `OdinPay.createCardForm()`.
+        *   The `billingInformation` object (with a nested `address` object) is returned in the `result.paymentMethod` payload from `OdinPay.js` and propagated to the host application's `onSubmit` callback.
+    *   **Status:** Implemented.
 
-*   **Field Customization (`placeholder`, `ariaLabel`):**
-    *   **Requirement:** Allow host applications to customize placeholder text and ARIA labels for configurable fields (e.g., `postalCode`, optional billing fields).
-    *   **Details:** Extend facade configuration and pass values down as props to the core component, which then uses them in the `OdinPay.createCardForm()` configuration.
-    *   **Status:** Pending design/implementation.
+*   ✅ **Field Customization (Labels, Placeholders)**
+    *   **Requirement:** Allow host applications to customize placeholder text and ARIA labels for configurable fields (e.g., `postalCode`, optional billing fields), and labels for all fields.
+    *   **Details:**
+        *   Labels for all fields (including `cardInformation`) can be customized via `billingFieldsConfig`.
+        *   Placeholders for all fields (except the internal placeholder of `cardInformation`) can be customized via `billingFieldsConfig`.
+        *   Facade configuration passes these values down to the core component, which then uses them in its `render()` method for labels and in the `OdinPay.createCardForm()` configuration for placeholders.
+        *   *ARIA label customization is pending future implementation if required.*
+    *   **Status:** Labels and Placeholders Implemented. ARIA labels pending.
+
+*   ✅ **Return `billingInformation` in `onSubmit` Callback**
+    *   **Requirement:** Ensure that billing information collected via enabled fields is returned to the host application.
+    *   **Details:** The `onSubmit` callback from the facade now includes an optional `billingInformation` object in its result payload, matching the structure returned by `OdinPay.js`.
+    *   **Status:** Implemented
 
 *   **Theme Configuration Pass-through:**
     *   **Requirement:** Allow host applications to pass a theme configuration object via the `@exerp/odin-dropin` facade (`config.theme`).

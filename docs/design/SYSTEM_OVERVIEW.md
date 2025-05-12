@@ -86,7 +86,7 @@ The process of initializing and displaying the ODIN Drop-in component typically 
         *   The `odinPublicToken`.
         *   The **mandatory** `countryCode` ('US' or 'CA').
         *   Optional `isSingleUse` flag.
-        *   Optional **`billingFieldsConfig`** object (e.g., `{ name: true }`). 
+        *   Optional **`billingFieldsConfig`** object (e.g., `{ name: true, addressLine1: { label: 'Street Address' } }`) to enable optional fields and customize labels/placeholders. Refer to the `BillingFieldsConfig` type for details. 
         *   Callback functions (`onSubmit`, `onError`).
         *   Optional general configuration (`config.theme` - currently deferred for full implementation).
 3.  **Facade Package (Mounting):**
@@ -121,11 +121,12 @@ When the user interacts with the form and initiates a submission:
 3.  **`OdinPay.js`:**
     *   Captures the payment details from its iframes.
     *   Communicates with ODIN servers to tokenize the payment information.
-    *   Invokes the callback function provided to `createCardForm`'s `submitButton.callback` option, passing a `result` object. **This `result.paymentMethod` object should contain the `id` and potentially a `billingInformation` object if optional billing fields were captured.** (*Note: Exact structure of `billingInformation` needs verification.*)
+    *   Invokes the callback function provided to `createCardForm`'s `submitButton.callback` option, passing a result object. If successful, `result.paymentMethod` contains the id and potentially a `billingInformation` object (with keys like `name`, `emailAddress`, and a nested address object: `{ addressLine1, city, postalCode, ... }`) if billing fields were configured and submitted
 4.  **Core Package (`<exerp-odin-cc-form>` component - OdinPay Callback):**
     *   The callback function receives the `result` object from `OdinPay.js`.
     *   If `result.success === true` and `result.paymentMethod.id` is present:
-        *   It emits an `odinSubmitInternal` event with the payload `{ paymentMethodId: result.paymentMethod.id }`.
+        *   It extracts the `paymentMethodId` and any `billingInformation` from `result.paymentMethod`.
+        *   It emits an `odinSubmitInternal` event with the payload `{ paymentMethodId, billingInformation? }`.
     *   If `result.success === false`:
         *   It parses the `result.message` (which can be a string, object, or array) to construct a structured error payload.
         *   It emits an `odinErrorInternal` event. The payload is an `OdinPayErrorPayload` object containing:
@@ -138,7 +139,7 @@ When the user interacts with the form and initiates a submission:
     *   The event listener for `odinSubmitInternal` (or `odinErrorInternal`) is triggered.
     *   It calls the corresponding `onSubmit` callback (with `{ paymentMethodId }`) or `onError` callback (with the structured `OdinPayErrorPayload`) provided by the host application during initialization.
 6.  **Host Application:**
-    *   Receives the `paymentMethodId` (on success) or error details (on failure) and proceeds with its application-specific logic (e.g., sending the `paymentMethodId` to its backend for payment processing or displaying an error message to the user).
+    *   Receives the `paymentMethodId` and optional `billingInformation` (on success) or error details (on failure) and proceeds with its application-specific logic (e.g., sending the `paymentMethodId` to its backend for payment processing or displaying an error message to the user).
 
 ### 4.3. Error Handling Flow
 

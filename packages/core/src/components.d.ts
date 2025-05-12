@@ -10,7 +10,7 @@ export { BillingFieldsConfig, OdinPayErrorPayload, OdinPaySubmitPayload } from "
 export namespace Components {
     interface ExerpOdinCcForm {
         /**
-          * Optional configuration to enable and manage additional billing fields. Example: { name: true } to enable the "Name on Card" field.
+          * Optional configuration to enable and customize billing fields. This object determines which optional billing fields are rendered and allows overriding their default labels and placeholders.  - For optional fields (e.g., `name`, `addressLine1`):   - `true`: Enables the field with default label and placeholder.   - `FieldCustomization` object (e.g., `{ label?: 'Custom Label', placeholder?: 'Custom Hint' }`):     Enables the field and applies the specified customizations.   - If a field key is omitted, the field is not rendered.  - For fields that are always structurally part of the form but can be customized   (e.g., `postalCode` label/placeholder, `cardInformation` label):   - Provide a `FieldCustomization` object to override default texts.  Example: `{   name: true, // Enable 'Name on Card' with defaults   addressLine1: { label: 'Street Address Line 1' }, // Custom label for address   city: { placeholder: 'Enter your city here' }, // Custom placeholder for city   postalCode: { label: 'Zip/Postal' } // Custom label for postal code }`  Refer to the `BillingFieldsConfig` and `FieldCustomization` type definitions within this file for the exact structure and available field names.
          */
         "billingFieldsConfig"?: BillingFieldsConfig;
         /**
@@ -57,7 +57,7 @@ declare global {
 declare namespace LocalJSX {
     interface ExerpOdinCcForm {
         /**
-          * Optional configuration to enable and manage additional billing fields. Example: { name: true } to enable the "Name on Card" field.
+          * Optional configuration to enable and customize billing fields. This object determines which optional billing fields are rendered and allows overriding their default labels and placeholders.  - For optional fields (e.g., `name`, `addressLine1`):   - `true`: Enables the field with default label and placeholder.   - `FieldCustomization` object (e.g., `{ label?: 'Custom Label', placeholder?: 'Custom Hint' }`):     Enables the field and applies the specified customizations.   - If a field key is omitted, the field is not rendered.  - For fields that are always structurally part of the form but can be customized   (e.g., `postalCode` label/placeholder, `cardInformation` label):   - Provide a `FieldCustomization` object to override default texts.  Example: `{   name: true, // Enable 'Name on Card' with defaults   addressLine1: { label: 'Street Address Line 1' }, // Custom label for address   city: { placeholder: 'Enter your city here' }, // Custom placeholder for city   postalCode: { label: 'Zip/Postal' } // Custom label for postal code }`  Refer to the `BillingFieldsConfig` and `FieldCustomization` type definitions within this file for the exact structure and available field names.
          */
         "billingFieldsConfig"?: BillingFieldsConfig;
         /**
@@ -77,7 +77,7 @@ declare namespace LocalJSX {
          */
         "onOdinErrorInternal"?: (event: ExerpOdinCcFormCustomEvent<OdinPayErrorPayload>) => void;
         /**
-          * Fired when OdinPay.js successfully returns a payment method token after the user submits the form. Contains the paymentMethodId.
+          * Fired when OdinPay.js successfully returns a payment method token after the user submits the form. The event detail contains the `paymentMethodId` and, if applicable, the `billingInformation` collected from the form.
          */
         "onOdinSubmitInternal"?: (event: ExerpOdinCcFormCustomEvent<OdinPaySubmitPayload>) => void;
     }
