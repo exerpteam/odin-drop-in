@@ -26,7 +26,7 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Details:**
         *   Extend `BillingFieldsConfig` to include `addressLine1`, `addressLine2`, `city`, `state`, `emailAddress`, `phoneNumber`.
         *   Core Stencil component needs to render necessary containers and pass config to `OdinPay.createCardForm()`.
-        *   Billing information collected should be included in the `paymentMethod.billingInformation` object within the `onSubmit` callback payload (verify with OdinPay.js).
+        *   **Verify and document the structure of the `billingInformation` object (or equivalent) within the `result.paymentMethod` payload returned by `OdinPay.js` when these fields are successfully submitted. Ensure the facade's `onSubmit` callback can potentially expose this data if needed by the host.** 
     *   **Status:** Pending design/implementation for additional fields.
 
 *   **Field Customization (`placeholder`, `ariaLabel`):**
@@ -45,9 +45,31 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Details:** Implement a log level configuration option to control the verbosity of console logs. This should be passed to `OdinPay.js` and used to filter logs accordingly.
     *   **Status:** Pending design/implementation.
 
-*   **Demo App: `isSingleUse` Toggle**
+## Demo Application Enhancements
+
+*   ✅ **Initial Setup (`apps/demo`)**:
+    *   **Requirement:** Create a basic Vue 3 + TS demo app using Vite.
+    *   **Details:** Allows local testing and serves as an example. Consumes `@exerp/odin-dropin` via workspace linking. Includes basic UI for token input, mounting, and result display.
+    *   **Status:** Implemented.
+
+*   ✅ **Country Code Selection**:
+    *   **Requirement:** Add UI in the demo app to select the `countryCode`.
+    *   **Details:** Added a dropdown for 'US'/'CA'.
+    *   **Status:** Implemented.
+
+*   ✅ **"Name on Card" Field Toggle**:
+    *   **Requirement:** Add UI in the demo app to toggle the `billingFieldsConfig.name` option.
+    *   **Details:** Added a checkbox.
+    *   **Status:** Implemented.
+
+*   **`isSingleUse` Toggle**
     *   **Requirement:** Add a UI toggle in the demo application to control the `isSingleUse` flag passed to the `OdinDropin`.
     *   **Details:** Will allow easier testing of both single-use and potentially saveable payment method token generation flows.
+    *   **Status:** Pending implementation.
+
+*   **Configuration Section UI Refactor**
+    *   **Requirement:** Improve the layout and organization of the configuration options in the demo app UI (`App.vue`).
+    *   **Details:** As more options (country code, billing fields toggles, isSingleUse toggle, etc.) are added, the current single-column layout might become cluttered. Refactor needed for better usability during development and testing. Could involve grouping related options.
     *   **Status:** Pending implementation.
 
 ## ACH Support
