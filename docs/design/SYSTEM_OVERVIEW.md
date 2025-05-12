@@ -52,9 +52,9 @@ The ODIN Drop-in workspace is a monorepo containing several key packages that wo
 *   **Key Responsibilities:**
     *   Exporting the primary `OdinDropin` class as the main entry point for integration.
     *   Managing the lifecycle of the core web component (`<exerp-odin-cc-form>`):
-        *   Receiving configuration from the host application (e.g., `odinPublicToken`, `isSingleUse`, callbacks).
+        *   Receiving configuration from the host application (e.g., `odinPublicToken`, **`countryCode`**, `isSingleUse`, **`billingFieldsConfig`**, callbacks).
         *   Creating an instance of the web component (`document.createElement('exerp-odin-cc-form')`).
-        *   Passing necessary properties (props) to the web component.
+        *   Passing necessary properties (props) to the web component (**`odinPublicToken`**, **`countryCode`**, **`isSingleUse`**, **`billingFieldsConfig`**).
         *   Attaching event listeners to the web component to capture `odinSubmitInternal` and `odinErrorInternal` events.
         *   Invoking the host application's `onSubmit` or `onError` callbacks with the processed results.
         *   Handling mounting (`mount()`) and unmounting (`unmount()`) of the web component in the host application's DOM.
@@ -84,15 +84,22 @@ The process of initializing and displaying the ODIN Drop-in component typically 
 2.  **Facade Package (`@exerp/odin-dropin` - `OdinDropin` class):**
     *   The host application instantiates `new OdinDropin()`, providing:
         *   The `odinPublicToken`.
+        *   The **mandatory** `countryCode` ('US' or 'CA').
         *   Optional `isSingleUse` flag.
+        *   Optional **`billingFieldsConfig`** object (e.g., `{ name: true }`). 
         *   Callback functions (`onSubmit`, `onError`).
-        *   Optional configuration (e.g., `config.theme` - currently deferred for full implementation).
+        *   Optional general configuration (`config.theme` - currently deferred for full implementation).
 3.  **Facade Package (Mounting):**
     *   The host application calls the `odinDropinInstance.mount(selectorOrElement)` method.
     *   The facade creates an instance of the `<exerp-odin-cc-form>` web component (`document.createElement('exerp-odin-cc-form')`).
-    *   It sets the `odinPublicToken` and `isSingleUse` properties on the web component instance.
+    *   It sets the `odinPublicToken`, **`countryCode`**, **`isSingleUse`**, and **`billingFieldsConfig`** properties on the web component instance.
     *   It attaches event listeners for `odinSubmitInternal` and `odinErrorInternal` events emitted by the web component.
     *   The web component is appended to the specified DOM mount point.
+4.  **Core Package (`@exerp/odin-dropin-core` - `<exerp-odin-cc-form>` component):**
+    *   Upon being added to the DOM and receiving props (especially `odinPublicToken`, `countryCode`), the component's `componentDidLoad` (or `watch` handlers) trigger.
+    *   It dynamically loads the external `OdinPay.js` script if not already loaded.
+    *   It initializes the `OdinPay` object using the `odinPublicToken`, **`countryCode`**, and a pre-defined theme structure (workaround for library bug).
+    *   It calls `odinPayInstance.createCardForm()`, providing selectors for the DOM elements within its template where `OdinPay.js` will inject the payment input iframes (Card Information, Postal Code, and **conditionally Name on Card or other enabled billing fields**). It also passes the `isSingleUse` flag and configurations for the **enabled billing fields** and the internal submit callback.
 4.  **Core Package (`@exerp/odin-dropin-core` - `<exerp-odin-cc-form>` component):**
     *   Upon being added to the DOM and receiving the `odinPublicToken` prop, the component's `componentDidLoad` (or `watch` on `odinPublicToken`) lifecycle method triggers.
     *   It dynamically loads the external `OdinPay.js` script if not already loaded.
@@ -114,7 +121,7 @@ When the user interacts with the form and initiates a submission:
 3.  **`OdinPay.js`:**
     *   Captures the payment details from its iframes.
     *   Communicates with ODIN servers to tokenize the payment information.
-    *   Invokes the callback function provided to `createCardForm`'s `submitButton.callback` option, passing a `result` object.
+    *   Invokes the callback function provided to `createCardForm`'s `submitButton.callback` option, passing a `result` object. **This `result.paymentMethod` object should contain the `id` and potentially a `billingInformation` object if optional billing fields were captured.** (*Note: Exact structure of `billingInformation` needs verification.*)
 4.  **Core Package (`<exerp-odin-cc-form>` component - OdinPay Callback):**
     *   The callback function receives the `result` object from `OdinPay.js`.
     *   If `result.success === true` and `result.paymentMethod.id` is present:

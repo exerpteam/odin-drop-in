@@ -6,12 +6,21 @@
     <title>Stencil Component Test</title>
     <script type="module" src="/build/exerp-odin-dropin-core.esm.js"></script>
     <script nomodule src="/build/exerp-odin-dropin-core.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const form = document.querySelector('exerp-odin-cc-form');
+        if (form) {
+          // Stencil props can be set directly on the element instance
+          form.billingFieldsConfig = { name: true };
+        }
+      });
+    </script>
   </head>
   <body>
     <h1>Testing exerp-odin-cc-form</h1>
-    {/* 🧑‍💻 Set the attribute here for the Stencil dev server test */}
-    <exerp-odin-cc-form odin-public-token="test-token-for-core-dev-server"></exerp-odin-cc-form>
+    <exerp-odin-cc-form odin-public-token="test-token-for-core-dev-server" country-code="US"></exerp-odin-cc-form>
     <hr>
+    <p>Try changing country-code to "CA" if you have a token that supports it, or observe if OdinPay.js changes behavior (e.g. postal code field label/validation).</p>
     <p>Component should render above this line with basic structure and styling.</p>
   </body>
 </html>

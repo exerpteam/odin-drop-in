@@ -9,25 +9,25 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Details:** Ensure that errors from `OdinPay.js` are mapped correctly to the component's error state.
     *   **Status:** Implemented.
 
-*  **Console Logging:**
-    *   **Requirement:** Add log level to the core component.
-    *   **Details:** Implement a log level configuration option to control the verbosity of console logs. This should be passed to `OdinPay.js` and used to filter logs accordingly.
-    *   **Status:** Pending design/implementation.
+*   ✅ **Country Code (`countryCode`)**
+    *   **Requirement:** Support country code configuration CA/US. Passed to `OdinPay()` constructor.
+    *   **Details:** Added as a mandatory `'US' | 'CA'` prop to core component and facade initialization.
+    *   **Status:** Implemented.
 
-*   **Country Code**
-    *   **Requirement:** Support country code configuration CA/US.
-    *   **Details:** TBD.
-    *   **Status:** Pending design/implementation.
-
-*   **Optional Billing Field Support (`createCardForm`):**
-    *   **Requirement:** Allow host applications to configure and render optional billing fields alongside the core Card Information and Postal Code fields.
+*   ✅ **Optional Billing Field Support (`createCardForm`): Name on Card**
+    *   **Requirement:** Allow host applications to configure and render the optional "Name on Card" field.
     *   **Details:**
-        *   Start with the `name` field (Name on Card).
-        *   Potentially extend to `addressLine1`, `addressLine2`, `city`, `state`, `country`, `emailAddress`, `phoneNumber`.
-        *   The facade's initialization options should accept configuration for which fields to include (e.g., `fields: { name: true, address: false }`).
-        *   The core Stencil component needs to render the necessary container `div`s and pass the configuration (selectors, placeholders, etc.) to `OdinPay.createCardForm()`.
-        *   Billing information collected should be included in the `paymentMethod.billingInformation` object within the `onSubmit` callback payload.
-    *   **Status:** Pending design/implementation.
+        *   Added `billingFieldsConfig: { name?: boolean }` prop to core component and facade.
+        *   Core component conditionally renders the field container and configures `OdinPay.createCardForm()`.
+    *   **Status:** Implemented for `name` field.
+
+*   **Optional Billing Field Support (`createCardForm`): Address Fields, etc.**
+    *   **Requirement:** Allow host applications to configure and render other optional billing fields.
+    *   **Details:**
+        *   Extend `BillingFieldsConfig` to include `addressLine1`, `addressLine2`, `city`, `state`, `emailAddress`, `phoneNumber`.
+        *   Core Stencil component needs to render necessary containers and pass config to `OdinPay.createCardForm()`.
+        *   Billing information collected should be included in the `paymentMethod.billingInformation` object within the `onSubmit` callback payload (verify with OdinPay.js).
+    *   **Status:** Pending design/implementation for additional fields.
 
 *   **Field Customization (`placeholder`, `ariaLabel`):**
     *   **Requirement:** Allow host applications to customize placeholder text and ARIA labels for configurable fields (e.g., `postalCode`, optional billing fields).
@@ -37,8 +37,18 @@ This document lists planned features and enhancements beyond the initial MVP sco
 *   **Theme Configuration Pass-through:**
     *   **Requirement:** Allow host applications to pass a theme configuration object via the `@exerp/odin-dropin` facade (`config.theme`).
     *   **Details:** The core Stencil component (`exerp-odin-cc-form`) should accept this theme object as a prop. It should then use this object (merged with defaults) when initializing `OdinPay()` via its `theme` option. This allows host applications to customize the appearance of the input fields rendered by `OdinPay.js`.
-    *   **Status:** Deferred from MVP. Low priority.
+        *   *Note: Current implementation hardcodes the theme structure due to a quirk in OdinPay.js options parsing. This task would involve revisiting how the theme is passed if OdinPay.js is updated or a more robust workaround is found.*
+    *   **Status:** Deferred from MVP. Low priority. (Added note about current status)
 
+*  **Console Logging:**
+    *   **Requirement:** Add log level to the core component.
+    *   **Details:** Implement a log level configuration option to control the verbosity of console logs. This should be passed to `OdinPay.js` and used to filter logs accordingly.
+    *   **Status:** Pending design/implementation.
+
+*   **Demo App: `isSingleUse` Toggle**
+    *   **Requirement:** Add a UI toggle in the demo application to control the `isSingleUse` flag passed to the `OdinDropin`.
+    *   **Details:** Will allow easier testing of both single-use and potentially saveable payment method token generation flows.
+    *   **Status:** Pending implementation.
 
 ## ACH Support
 

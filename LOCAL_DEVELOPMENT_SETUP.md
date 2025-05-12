@@ -41,16 +41,39 @@ Once linked, you can import components or functions exported from `@exerp/odin-d
 <script setup lang="ts">
 import { onMounted } from 'vue';
 // ⬇️ Import from the linked package
-import { initializeOdinDropin } from '@exerp/odin-dropin';
+import { OdinDropin } from '@exerp/odin-dropin';
+// 📝 Import types if needed
+import type { OdinPayErrorPayload } from '@exerp/odin-dropin';
+
+const dropinContainerRef = ref<HTMLElement | null>(null);
+let odinDropinInstance: OdinDropin | null = null;
 
 onMounted(() => {
   console.log('Host component mounted.');
   try {
-    // ⬇️ Call the function from the drop-in
-    const result = initializeOdinDropin();
-    console.log('Result from initializeOdinDropin:', result);
+    // ⬇️ Simulate fetching token and getting country
+    const odinPublicToken = 'YOUR_TEST_TOKEN'; // Replace with actual token
+    const countryCode = 'US'; // Replace with 'CA' or dynamic value
+    
+    if (!dropinContainerRef.value) {
+      console.error("Mount point not found!");
+      return;
+    }
+
+    // ⬇️ Instantiate with mandatory params
+    odinDropinInstance = new OdinDropin({
+      odinPublicToken: odinPublicToken,
+      countryCode: countryCode,
+      onSubmit: (result) => { console.log('Result from Dropin onSubmit:', result); },
+      onError: (error: OdinPayErrorPayload) => { console.error('Error from Dropin onError:', error); }
+    });
+
+    // ⬇️ Mount the drop-in
+    odinDropinInstance.mount(dropinContainerRef.value); // Use the ref's value, or the ID of the mount point
+    console.log('OdinDropin mount called.');
+
   } catch (error) {
-    console.error('Failed to call initializeOdinDropin:', error);
+    console.error('Failed to initialize or mount OdinDropin:', error);
   }
 });
 </script>
@@ -58,7 +81,7 @@ onMounted(() => {
 <template>
   <div>Host Application Component</div>
   <!-- 📝 Later, you will mount the actual drop-in component here -->
-  <div id="dropin-mount-point"></div>
+  <div id="dropin-mount-point" ref="dropinContainerRef"></div>
 </template>
 ```
 

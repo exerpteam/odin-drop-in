@@ -466,3 +466,61 @@ The `@exerp/odin-dropin` facade correctly passes the `isSingleUse` prop and list
 -   Successful submissions and errors (including validation errors) are correctly processed, emitted, and displayed in the UI and relayed to the host app.
 -   Host application styling is successfully applied.
 -   The core MVP functionality is complete and robust callback handling is implemented.
+
+## 14. Implement Mandatory Country Code Support
+
+### State
+The ODIN Drop-in component now requires a `countryCode` ('US' or 'CA') to be specified during initialization. This code is passed from the host application, through the facade, down to the core Stencil component, and used when initializing `OdinPay.js` via its `country` option. This ensures the payment form is configured for the correct region. An issue with `OdinPay.js` options parsing (where providing both `country` and a top-level `input` theme object caused errors) was identified and worked around by ensuring the theme is passed as a nested object (`{ country: 'US', theme: { ... } }`).
+
+### Key Changes & Resolutions:
+
+-   **Core Component (`packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx`):**
+    -   Added a mandatory `countryCode!: 'US' | 'CA'` prop.
+    -   Updated `componentDidLoad` and added `watchCountryCode` to re-initialize `OdinPay` if the prop changes or is initially set.
+    -   Modified `initializeOdinPayAndForm` to pass `{ country: this.countryCode, theme: { ... } }` as the options to `OdinPay()`. This structure works around an identified `OdinPay.js` bug related to option parsing.
+    -   Added error handling for missing `countryCode`.
+-   **Facade (`packages/odin-dropin/src/index.ts`):**
+    -   Updated `OdinDropinInitializationParams` to include a mandatory `countryCode: 'US' | 'CA'`.
+    -   The `OdinDropin` constructor and `mount` method now handle and pass the `countryCode` to the core web component.
+    -   Added error handling if `countryCode` is missing during facade initialization.
+-   **Demo App (`apps/demo/src/App.vue`):**
+    -   Added a `<select>` dropdown for users to choose 'US' or 'CA'.
+    -   The selected `countryCode` is passed during `OdinDropin` initialization.
+-   **Documentation:**
+    -   Updated `packages/core/.../readme.md` (auto-updated by Stencil) and `packages/odin-dropin/README.md` to reflect the new mandatory `countryCode` parameter.
+    -   Updated `FEATURE_BACKLOG.md`.
+
+### Current Status:
+-   `countryCode` is successfully passed through all layers.
+-   `OdinPay.js` is initialized with the correct country and theme structure.
+-   The demo application allows testing with different country codes.
+-   The previously observed `TypeError` related to `OdinPay.js` option parsing is resolved.
+
+## 15. Implement Optional "Name on Card" Billing Field
+
+### State
+The ODIN Drop-in component now supports an optional "Name on Card" billing field. This is controlled via a new `billingFieldsConfig` object passed during initialization.
+
+### Key Changes & Resolutions:
+
+-   **Core Component (`packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx`):**
+    -   Defined a `BillingFieldsConfig` interface (initially `{ name?: boolean }`).
+    -   Added an optional `billingFieldsConfig?: BillingFieldsConfig` prop.
+    -   The `render()` method conditionally renders the "Name on Card" field's `div` container and `label` if `billingFieldsConfig.name` is true.
+    -   `renderOdinForm()` dynamically adds the `name` field configuration (selector, placeholder) to the `fields` object passed to `OdinPay.createCardForm()` if enabled.
+    -   Generated a unique ID for the name field container.
+-   **Facade (`packages/odin-dropin/src/index.ts`):**
+    -   Imported and re-exported `BillingFieldsConfig` from the core package.
+    -   Added an optional `billingFieldsConfig?: BillingFieldsConfig` to `OdinDropinInitializationParams`.
+    -   The `mount` method passes the `billingFieldsConfig` to the core web component.
+-   **Demo App (`apps/demo/src/App.vue`):**
+    -   Added a checkbox to toggle `enableNameField`.
+    *   A computed property `currentBillingFieldsConfig` creates the config object `{ name: enableNameField.value }` and passes it to `OdinDropin`.
+-   **Documentation:**
+    -   Updated `packages/core/.../readme.md` (auto-updated by Stencil) and `packages/odin-dropin/README.md` for the new `billingFieldsConfig` parameter.
+    -   Updated `FEATURE_BACKLOG.md`.
+
+### Current Status:
+-   The "Name on Card" field can be dynamically shown or hidden in the demo app.
+-   `OdinPay.js` correctly renders the field when configured.
+-   The basic infrastructure for adding more optional billing fields is now in place.

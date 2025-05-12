@@ -97,4 +97,11 @@ Implement the initial ODIN Drop-in functionality within the `@exerp/odin-dropin-
 - Initial `README.md` files as specified.
 - The codebase must be written in TypeScript and adhere to standard linting practices (configure ESLint/Prettier).
 
----
+**8. Post-MVP Enhancements (Implemented)**
+
+Immediately following the completion of the MVP scope defined above, the following key enhancements were implemented:
+
+*   **Mandatory Country Code:** The component now requires a `countryCode` ('US' or 'CA') during initialization, ensuring correct regional configuration for `OdinPay.js`.
+*   **"Name on Card" Field:** Support for optionally displaying the "Name on Card" field was added via the `billingFieldsConfig.name` parameter.
+
+Refer to the [Feature Backlog](../../planning/FEATURE_BACKLOG.md) and [System Overview](../SYSTEM_OVERVIEW.md) for details on these and other ongoing developments.

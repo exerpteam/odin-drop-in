@@ -2,12 +2,14 @@ import "@exerp/odin-dropin-core/exerp-odin-cc-form";
 import {
   OdinPayErrorPayload as CoreOdinPayErrorPayload, // Use an alias to avoid name clash if needed locally
   OdinPaySubmitPayload,
+  BillingFieldsConfig as CoreBillingFieldsConfig,
 } from "../../core/dist/types/components";
 
-// 🧑‍💻 Define interfaces for the configuration and callbacks based on the MVP spec
+// This is for general drop-in config, not specific OdinPay fields yet
 interface OdinDropinConfigOptions {
   theme?: { primaryColor?: string; fontBase?: string };
-  // Add other config properties as needed
+  // 📝 Future: we might move billingFieldsConfig under this 'config' object if it makes sense.
+  // For now, keeping it at the top level of OdinDropinInitializationParams.
 }
 
 interface OdinSubmitPayload {
@@ -17,7 +19,13 @@ interface OdinSubmitPayload {
 
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
+  countryCode: "US" | "CA";
   isSingleUse?: boolean;
+  /**
+   * Optional configuration to enable and manage additional billing fields.
+   * Example: { name: true } to enable the "Name on Card" field.
+   */
+  billingFieldsConfig?: CoreBillingFieldsConfig;
   config?: OdinDropinConfigOptions;
   onSubmit: (result: OdinSubmitPayload) => void;
   onError: (error: CoreOdinPayErrorPayload) => void;
@@ -31,8 +39,12 @@ export class OdinDropin {
   constructor(params: OdinDropinInitializationParams) {
     this.params = params;
     console.log(
-      "OdinDropin instance created (using direct custom element import). Public token:",
-      params.odinPublicToken
+      "OdinDropin instance created. Public token:",
+      params.odinPublicToken,
+      "Country Code:",
+      params.countryCode,
+      "Billing Fields Config:",
+      params.billingFieldsConfig
     );
     // The custom element <exerp-odin-cc-form> should already be defined by the import at the top.
   }
@@ -58,46 +70,52 @@ export class OdinDropin {
       return;
     }
 
+    if (!this.params.countryCode) {
+      const errorMsg =
+        "OdinDropin: 'countryCode' is missing in initialization parameters.";
+      console.error(errorMsg);
+      this.params.onError({
+        code: "INIT_NO_COUNTRY_CODE_FACADE",
+        message: errorMsg,
+      });
+      return;
+    }
+
     mountPoint.innerHTML = ""; // Clear previous content
-    // 🧑‍💻 Ensure you use the correct type here after importing it.
-    // If HTMLExerpOdinCcFormElement is not resolving, ensure `packages/core/src/components.d.ts` is correct
-    // and `moduleResolution: "bundler"` is working as expected across packages.
-    // For now, if types are tricky, you can use `any` temporarily for `this.odinCcFormComponent`
-    // and `document.createElement('exerp-odin-cc-form') as any;`
     this.odinCcFormComponent = document.createElement(
       "exerp-odin-cc-form"
     ) as HTMLExerpOdinCcFormElement;
     if (this.odinCcFormComponent) {
-      // 📝 TODO: Pass props to this.odinCcFormComponent (e.g., publicToken, callbacks for OdinPay.js)
-      //    This will be the next step after we confirm rendering.
-      //    Example:
-      //    (this.odinCcFormComponent as any).publicToken = this.params.odinPublicToken;
-      //    (this.odinCcFormComponent as any).onSubmitOdinPay = this.params.onSubmit; // Stencil component would emit, or facade calls it
-      //    (this.odinCcFormComponent as any).onErrorOdinPay = this.params.onError;
-
-      // 📝 TODO: Listen to events from this.odinCcFormComponent if it emits 'odinSubmit' / 'odinError'
-      //    this.odinCcFormComponent.addEventListener('odinSubmitInternal', (event: CustomEvent<OdinSubmitPayload>) => {
-      //      this.params.onSubmit(event.detail);
-      //    });
-      //    this.odinCcFormComponent.addEventListener('odinErrorInternal', (event: CustomEvent<OdinErrorPayload>) => {
-      //      this.params.onError(event.detail);
-      //    });
-
       console.log(
         "[Facade] Token to pass to component:",
-        this.params.odinPublicToken
-      ); // 🧑‍💻 Log the token
+        this.params.odinPublicToken,
+        "Country Code to pass:",
+        this.params.countryCode,
+        "Billing Fields Config:",
+        this.params.billingFieldsConfig
+      );
       this.odinCcFormComponent.odinPublicToken = this.params.odinPublicToken;
-      console.log(
-        "[Facade] Component instance after setting token:",
-        this.odinCcFormComponent
-      ); // 🧑‍💻 Log the component
-      console.log(
-        "[Facade] Component.odinPublicToken value:",
-        this.odinCcFormComponent.odinPublicToken
-      ); // 🧑‍💻 Log the value from the instance
+      this.odinCcFormComponent.countryCode = this.params.countryCode;
 
-      // --- 🧑‍💻 ADD EVENT LISTENERS ---
+      // Pass isSingleUse (handle undefined by defaulting as the component does)
+      if (typeof this.params.isSingleUse === "boolean") {
+        this.odinCcFormComponent.isSingleUse = this.params.isSingleUse;
+      }
+
+      if (this.params.billingFieldsConfig) {
+        this.odinCcFormComponent.billingFieldsConfig = this.params.billingFieldsConfig;
+      }
+
+      console.log(
+        "[Facade] Component instance after setting props:",
+        this.odinCcFormComponent,
+        "token:",
+        this.odinCcFormComponent.odinPublicToken,
+        "countryCode:",
+        this.odinCcFormComponent.countryCode,
+        "billingFieldsConfig:", this.odinCcFormComponent.billingFieldsConfig
+      );
+
       this.odinCcFormComponent.addEventListener(
         "odinSubmitInternal",
         this.handleOdinSubmit
@@ -107,13 +125,11 @@ export class OdinDropin {
         this.handleOdinError
       );
       this.eventListenersAttached = true;
-      // --- END ADD ---
 
       mountPoint.appendChild(this.odinCcFormComponent);
       console.log(
-        "exerp-odin-cc-form mounted to",
-        mountPoint,
-        "with token and isSingleUse config."
+        "exerp-odin-cc-form mounted to", mountPoint,
+        "with token, countryCode, isSingleUse, and billingFields config."
       );
     } else {
       console.error("Failed to create exerp-odin-cc-form component instance.");
@@ -142,7 +158,6 @@ export class OdinDropin {
 
   public unmount(): void {
     if (this.odinCcFormComponent) {
-      // --- 🧑‍💻 ADD LISTENER REMOVAL ---
       if (this.eventListenersAttached) {
         this.odinCcFormComponent.removeEventListener(
           "odinSubmitInternal",
@@ -166,14 +181,14 @@ export class OdinDropin {
   }
 }
 
-// 🧑‍💻 For UMD/global variable builds, Vite will use the 'name' option in build.lib
+// TODO: For UMD/global variable builds, Vite will use the 'name' option in build.lib
 // This allows for `new OdinDropin(...)` if the script is included directly.
 // No explicit window.OdinDropin = OdinDropin needed here if Vite is configured.
-
-// 🧑‍💻 Keep the test function if you still use it for basic link verification, or remove it.
+// Keep the test function if you still use it for basic link verification, or remove it.
 export function initializeOdinDropin(): string {
   console.log("initializeOdinDropin CALLED (legacy test function)");
   return "Odin Drop-in Initialized (Test)";
 }
 
 export type { CoreOdinPayErrorPayload as OdinPayErrorPayload };
+export type { CoreBillingFieldsConfig as BillingFieldsConfig };

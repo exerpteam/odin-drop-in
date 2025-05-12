@@ -33,9 +33,12 @@ To integrate the ODIN Drop-in into your application:
 
     // Fetch your ODIN_PUBLIC_TOKEN from your backend
     const odinPublicToken = 'YOUR_FETCHED_ODIN_PUBLIC_TOKEN';
+    const userCountryCode = 'US'; // Or 'CA', determine from user context
 
     const odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken,
+      countryCode: userCountryCode,
+      // billingFieldsConfig: { name: true }, // Uncomment to enable optional billing fields
       onSubmit: (result) => { console.log('Success:', result.paymentMethodId); /* ... */ },
       onError: (error) => { console.error('Error:', error.message); /* ... */ }
     });

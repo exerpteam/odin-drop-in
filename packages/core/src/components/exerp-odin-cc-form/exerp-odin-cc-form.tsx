@@ -23,6 +23,11 @@ export interface OdinPayErrorPayload {
   rawError?: any; // Optional: For debugging, could include the original result.message
 }
 
+export interface BillingFieldsConfig {
+  name?: boolean; // For "Name on Card"
+  // 📝 We'll add more fields here later: addressLine1, etc.
+}
+
 @Component({
   tag: 'exerp-odin-cc-form',
   styleUrl: 'exerp-odin-cc-form.css',
@@ -44,6 +49,18 @@ export class ExerpOdinCcForm {
   @Prop() isSingleUse: boolean = true;
 
   /**
+   * The country code ('US' or 'CA') for which the payment form should be configured.
+   * This is mandatory and passed to OdinPay.js.
+   */
+  @Prop() countryCode!: 'US' | 'CA'; // Making it mandatory and specific
+
+  /**
+   * Optional configuration to enable and manage additional billing fields.
+   * Example: { name: true } to enable the "Name on Card" field.
+   */
+  @Prop() billingFieldsConfig?: BillingFieldsConfig;
+
+  /**
    * Fired when OdinPay.js successfully returns a payment method token
    * after the user submits the form. Contains the paymentMethodId.
    */
@@ -59,9 +76,11 @@ export class ExerpOdinCcForm {
   @State() private scriptLoaded: boolean = false;
   @State() private initializationError: string | null = null;
   @State() private isLoading: boolean = false;
+  @State() private odinFormRenderedBySDK: boolean = false;
 
   private componentId = `exerp-odin-cc-form-${Math.random().toString(36).substring(2, 9)}`;
   private cardInfoId = `${this.componentId}-card-info`;
+  private nameOnCardId = `${this.componentId}-name-on-card`;
   private postalCodeId = `${this.componentId}-postal-code`;
   private odinSubmitButtonId = `${this.componentId}-odin-submit-button`;
   private visibleSubmitButtonId = `${this.componentId}-visible-submit-button`;
@@ -83,25 +102,66 @@ export class ExerpOdinCcForm {
   }
 
   async componentDidLoad() {
-    console.log('[Core Component] componentDidLoad - odinPublicToken:', this.odinPublicToken);
-    if (this.odinPublicToken) {
+    console.log('[Core Component] componentDidLoad - odinPublicToken:', this.odinPublicToken, 'countryCode:', this.countryCode);
+    // Check for countryCode before initializing
+    if (this.odinPublicToken && this.countryCode) {
       await this.initializeOdinPayAndForm();
+    } else if (!this.countryCode) {
+      const errorMsg = '[Core Component] countryCode prop is missing. Cannot initialize OdinPay.';
+      console.error(errorMsg);
+      this.initializationError = errorMsg;
+      this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE' });
+      this.isLoading = false;
     }
   }
 
   @Watch('odinPublicToken')
   async watchOdinPublicToken(newValue: string, oldValue: string) {
     if (newValue && newValue !== oldValue) {
-      console.log('[Core Component] odinPublicToken changed, re-initializing OdinPay');
-      // Potentially re-initialize or update OdinPay instance if token changes after initial load
-      // For now, we assume it's set once. A more robust solution might unmount/remount.
+      console.log('[Core Component] odinPublicToken changed, re-initializing OdinPay. Current countryCode:', this.countryCode);
+      // Check for countryCode before re-initializing
+      if (this.countryCode) {
+        await this.initializeOdinPayAndForm();
+      } else {
+        const errorMsg = '[Core Component] countryCode prop is missing on token change. Cannot re-initialize OdinPay.';
+        console.error(errorMsg);
+        // Optionally emit an error or handle as appropriate
+        this.initializationError = errorMsg;
+        this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE_ON_UPDATE' });
+        this.isLoading = false;
+      }
+    }
+  }
+
+  @Watch('countryCode')
+  async watchCountryCode(newValue: string, oldValue: string) {
+    if (newValue && newValue !== oldValue && this.odinPublicToken) {
+      console.log('[Core Component] countryCode changed, re-initializing OdinPay. New value:', newValue);
       await this.initializeOdinPayAndForm();
+    } else if (!newValue && this.odinPublicToken) {
+      const errorMsg = '[Core Component] countryCode prop was unset. Cannot re-initialize OdinPay.';
+      console.error(errorMsg);
+      this.initializationError = errorMsg;
+      this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE_ON_UPDATE' });
+      this.isLoading = false;
     }
   }
 
   private async initializeOdinPayAndForm() {
     this.isLoading = true;
     this.initializationError = null;
+    this.odinFormRenderedBySDK = false;
+
+    // Early exit if countryCode is missing (though props should ensure it, this is defensive)
+    if (!this.countryCode) {
+      const errorMsg = '[Core Component] Internal Error: countryCode is missing in initializeOdinPayAndForm.';
+      console.error(errorMsg);
+      this.initializationError = errorMsg;
+      this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE_INTERNAL' });
+      this.isLoading = false;
+      return;
+    }
+
     try {
       if (!this.scriptLoaded) {
         await this.loadScript('https://js.odinpay.net', 'odin-pay-sdk');
@@ -113,11 +173,13 @@ export class ExerpOdinCcForm {
         this.initializationError = 'OdinPay SDK is not available even after script load.';
         console.error(this.initializationError);
         this.odinErrorInternal.emit({ message: this.initializationError, code: 'SDK_LOAD_ERROR' });
+        this.isLoading = false;
         return;
       }
 
       // Basic theme from CodePen example, can be made configurable via prop later
-      const theme = {
+      const baseTheme = {
+        // Define our base theme structure
         input: {
           base: {
             fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans',
@@ -130,21 +192,37 @@ export class ExerpOdinCcForm {
         },
       };
 
-      this.odinPayInstance = OdinPay(this.odinPublicToken, { ...theme });
+      // Construct the options object with 'country' and a nested 'theme'
+      const odinPayOptions = {
+        country: this.countryCode,
+        theme: baseTheme,
+      };
+      console.log(`[Core Component] About to call OdinPay(). Token:`, this.odinPublicToken, `Options:`, JSON.stringify(odinPayOptions));
+
+      try {
+        this.odinPayInstance = OdinPay(this.odinPublicToken, odinPayOptions);
+      } catch (odinConstructorError: any) {
+        console.error('[Core Component] Error DIRECTLY from OdinPay() constructor:', odinConstructorError);
+        // Re-throw to be caught by the outer catch block which handles emitting the event
+        this.odinPayInstance = null;
+        throw odinConstructorError;
+      }
+
       console.log('[Core Component] OdinPay initialized with instance:', this.odinPayInstance);
       this.initializationError = null;
 
       // Call the method to create the form
       this.renderOdinForm();
     } catch (error: any) {
-      // 🧑‍💻 We're keeping `error: any` for now, can be typed as `Error`
-      console.error('[Core Component] Error initializing OdinPay:', error);
+      // We're keeping `error: any` for now, can be typed as `Error`
+      console.error('[Core Component] RAW Error object during OdinPay initialization:', error);
       const errorMessage = error?.message || 'Failed to initialize OdinPay.';
+      console.error('[Core Component] Error initializing OdinPay (processed message):', errorMessage);
       this.initializationError = errorMessage; // This state is used for display within the component itself
 
       let specificErrorCode = 'INITIALIZATION_ERROR'; // Default/general initialization error code
 
-      // 🧑‍💻 Try to map known OdinPay.js initialization error messages to more specific codes
+      // Try to map known OdinPay.js initialization error messages to more specific codes
       if (errorMessage === 'No key provided') {
         specificErrorCode = 'INIT_NO_KEY_PROVIDED';
       } else if (errorMessage === 'Badly formatted key') {
@@ -167,6 +245,7 @@ export class ExerpOdinCcForm {
         code: specificErrorCode,
         message: errorMessage,
         // fieldErrors and httpStatusCode are typically not applicable for these synchronous init errors
+        rawError: error, // Also good to include the raw error in the emitted payload
       };
       this.odinErrorInternal.emit(errorPayload);
 
@@ -179,14 +258,39 @@ export class ExerpOdinCcForm {
   private renderOdinForm() {
     if (!this.odinPayInstance) {
       console.warn('[Core Component] OdinPay instance not available to create form.');
-      this.initializationError = 'OdinPay instance is null, cannot render form.';
-      this.odinErrorInternal.emit({ message: this.initializationError, code: 'INSTANCE_NULL' });
+      if (!this.initializationError) {
+        // Defensive set if somehow missed
+        this.initializationError = 'OdinPay instance is null, cannot render form.';
+        this.odinErrorInternal.emit({ message: this.initializationError, code: 'INSTANCE_NULL' });
+      }
+      this.odinFormRenderedBySDK = false;
       this.isLoading = false;
       return;
     }
 
     console.log(`[Core Component] Attempting to create card form. isSingleUse: ${this.isSingleUse}`);
     console.log(`[Core Component] Targeting cardInfoId: #${this.cardInfoId}, postalCodeId: #${this.postalCodeId}, submitButtonId: #${this.odinSubmitButtonId}`);
+
+    const odinPayFields: any = {
+      // Start with base fields
+      cardInformation: {
+        selector: this.cardInfoId,
+      },
+      postalCode: {
+        selector: this.postalCodeId,
+      },
+    };
+
+    // Conditionally add 'name' field if configured
+    if (this.billingFieldsConfig?.name) {
+      odinPayFields.name = {
+        selector: this.nameOnCardId,
+        placeholder: 'Name on Card', // Optional: OdinPay might have its own default
+        // ariaLabel: "Name on Card", // Optional
+      };
+    }
+
+    console.log('[Core Component] Final fields object for OdinPay:', odinPayFields);
 
     try {
       this.odinPayInstance.createCardForm({
@@ -216,37 +320,46 @@ export class ExerpOdinCcForm {
             this.isLoading = false; // Set loading false after callback processing
           },
         },
-        fields: {
-          cardInformation: {
-            selector: this.cardInfoId, // Use the dynamic ID
-            // ariaLabel: "Card Details", // Optional
-          },
-          postalCode: {
-            selector: this.postalCodeId, // Use the dynamic ID
-            // placeholder: "Postal Code", // Optional
-            // ariaLabel: "Billing Postal Code", // Optional
-          },
-          // Add 'name' field later
-          // name: {
-          //   selector: `${this.componentId}-name-on-card`, // You'll need a div with this ID
-          //   placeholder: "Name on Card"
-          // }
-        },
+        fields: odinPayFields,
       });
       console.log('[Core Component] OdinPay createCardForm called successfully.');
       this.initializationError = null;
+      this.odinFormRenderedBySDK = true;
       this.isLoading = false; // Set loading false after createCardForm call succeeds
     } catch (error) {
       // FIXME -- Expect the actual Error type here.
       console.error('[Core Component] Error calling createCardForm:', error);
       this.initializationError = (error as any)?.message || 'Failed to create OdinPay card form.';
       this.odinErrorInternal.emit({ message: this.initializationError!, code: 'CREATE_FORM_ERROR' });
+      this.odinFormRenderedBySDK = false;
       this.isLoading = false;
     }
   }
 
   private handleVisibleSubmitClick = () => {
     console.log('[Core Component] Visible submit button clicked.');
+
+    // --- Guard against submission if not properly initialized/rendered ---
+    if (this.isLoading || !this.odinPayInstance || !this.odinFormRenderedBySDK || this.initializationError) {
+      console.warn(
+        '[Core Component] Submission prevented. isLoading:',
+        this.isLoading,
+        'hasInstance:',
+        !!this.odinPayInstance,
+        'formRendered:',
+        this.odinFormRenderedBySDK,
+        'initError:',
+        this.initializationError,
+      );
+      // Optionally, re-emit the initializationError if it exists, or a new error
+      if (this.initializationError) {
+        this.odinErrorInternal.emit({ message: `Cannot submit: ${this.initializationError}`, code: 'SUBMIT_WHILE_INIT_ERROR' });
+      } else if (!this.odinPayInstance || !this.odinFormRenderedBySDK) {
+        this.odinErrorInternal.emit({ message: 'Cannot submit: Form not ready.', code: 'FORM_NOT_READY' });
+      }
+      return;
+    }
+
     // Set loading state
     this.isLoading = true;
 
@@ -325,10 +438,18 @@ export class ExerpOdinCcForm {
   }
 
   render() {
+    const isButtonDisabled = this.isLoading || !this.odinFormRenderedBySDK || !!this.initializationError;
     return (
       <div class="exerp-odin-dropin-container">
         {this.initializationError && (
           <div style={{ color: 'red', marginBottom: '10px', border: '1px solid red', padding: '5px' }}>Initialization Error: {this.initializationError}</div>
+        )}
+
+        {this.billingFieldsConfig?.name && (
+          <div class="odin-field-container">
+            <label htmlFor={this.nameOnCardId}>Name on Card</label>
+            <div id={this.nameOnCardId} class="odin-input"></div>
+          </div>
         )}
 
         <div class="odin-field-container">
@@ -342,7 +463,7 @@ export class ExerpOdinCcForm {
         </div>
 
         <div class="odin-submit-container">
-          <button id={this.visibleSubmitButtonId} class="odin-submit-button" type="button" disabled={this.isLoading} onClick={this.handleVisibleSubmitClick}>
+          <button id={this.visibleSubmitButtonId} class="odin-submit-button" type="button" disabled={isButtonDisabled} onClick={this.handleVisibleSubmitClick}>
             {this.isLoading ? 'Loading...' : 'Pay'}
           </button>
 

@@ -1,14 +1,27 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import { OdinDropin } from "@exerp/odin-dropin";
-import type { OdinPayErrorPayload } from "@exerp/odin-dropin";
+import type {
+  OdinPayErrorPayload,
+  BillingFieldsConfig,
+} from "@exerp/odin-dropin";
 
 // --- State ---
 const odinPublicToken = ref("");
+const countryCode = ref<"US" | "CA">("US");
+const enableNameField = ref(false);
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
 const displayedError = ref<OdinPayErrorPayload | null>(null);
 let odinDropinInstance: OdinDropin | null = null; // To store the instance
+
+const currentBillingFieldsConfig = computed<BillingFieldsConfig>(() => {
+  return {
+    name: enableNameField.value,
+    // 📝 Future: add other fields here based on their refs
+    // addressLine1: enableAddressLine1.value,
+  };
+});
 
 // --- Methods ---
 async function initializeAndMountDropin() {
@@ -20,6 +33,17 @@ async function initializeAndMountDropin() {
     displayedError.value = {
       code: "DEMO_APP_VALIDATION",
       message: "Please provide an ODIN Public Token.",
+    };
+    return;
+  }
+
+  if (
+    !countryCode.value ||
+    (countryCode.value !== "US" && countryCode.value !== "CA")
+  ) {
+    displayedError.value = {
+      code: "DEMO_APP_VALIDATION",
+      message: "Please select a valid Country Code (US or CA).",
     };
     return;
   }
@@ -42,10 +66,15 @@ async function initializeAndMountDropin() {
   await nextTick();
 
   try {
+    console.log(
+      `[DemoApp] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}`
+    );
     // Actual Drop-in Initialization Logic
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken.value,
+      countryCode: countryCode.value,
       isSingleUse: true,
+      billingFieldsConfig: currentBillingFieldsConfig.value,
       config: {
         // theme: { primaryColor: '#007bff' } // Example theme
       },
@@ -88,14 +117,37 @@ onMounted(() => {
     <h1>Exerp ODIN Drop-in Demo (Vue + TS)</h1>
 
     <div class="config-section">
-      <label for="publicToken">ODIN Public Token:</label>
-      <input
-        id="publicToken"
-        type="text"
-        v-model="odinPublicToken"
-        placeholder="Paste your test public token here"
-      />
-      <button @click="initializeAndMountDropin">
+      <div>
+        <label for="publicToken">ODIN Public Token:</label>
+        <input
+          id="publicToken"
+          type="text"
+          v-model="odinPublicToken"
+          placeholder="Paste your test public token here"
+        />
+      </div>
+
+      <div style="margin-top: 15px">
+        <label for="countryCode">Country Code:</label>
+        <select id="countryCode" v-model="countryCode">
+          <option value="US">US - United States</option>
+          <option value="CA">CA - Canada</option>
+        </select>
+      </div>
+
+      <div style="margin-top: 15px">
+        <label
+          for="enableNameField"
+          style="display: inline-block; margin-right: 10px"
+        >
+          Enable "Name on Card" field:
+        </label>
+        <input type="checkbox" id="enableNameField" v-model="enableNameField" />
+      </div>
+
+      <!-- 📝 Majid: Future fields like isSingleUse toggle and other billing fields will go here or in a sub-section -->
+
+      <button @click="initializeAndMountDropin" style="margin-top: 20px">
         Initialize & Mount Drop-in
       </button>
     </div>
@@ -233,6 +285,10 @@ h1 {
   padding-bottom: 10px;
 }
 
+label[for="enableNameField"] + input[type="checkbox"] {
+  vertical-align: middle;
+}
+
 #odin-dropin-container {
   min-height: 150px;
   padding: 5px; /* Reduced padding to let internal component spacing dominate */
@@ -267,6 +323,24 @@ h1 {
   border: 1px solid #feb2b2; /* Red border */
   margin-top: 10px;
   font-weight: 500;
+}
+
+.config-section select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 1em;
+  background-color: white; /* Ensure it has a background on dark themes if not reset globally */
+  color: #4a5568; /* Ensure text color is readable */
+}
+
+.config-section select:focus {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+  outline: none;
 }
 
 /* --- Styling elements INSIDE the Stencil Component --- */
