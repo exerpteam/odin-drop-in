@@ -524,3 +524,29 @@ The ODIN Drop-in component now supports an optional "Name on Card" billing field
 -   The "Name on Card" field can be dynamically shown or hidden in the demo app.
 -   `OdinPay.js` correctly renders the field when configured.
 -   The basic infrastructure for adding more optional billing fields is now in place.
+
+## 16. Enhance Success Payload with Detailed Payment Method Information
+
+### State
+The `OdinSubmitPayload` returned by the facade's `onSubmit` callback has been enhanced to include more detailed information about the tokenized payment method. This provides integrators with richer data beyond just the `paymentMethodId` and `billingInformation`.
+
+### Key Changes & Resolutions:
+-   **Core Component & Facade Types (`OdinPaySubmitPayload`):**
+    -   Added `paymentMethodType: 'CARD'` to the payload.
+    -   Introduced a `details` object within the payload, typed as `CardPaymentMethodDetails`.
+    -   `CardPaymentMethodDetails` includes `cardBrand?`, `last4?`, `maskedAccountNumber?`, `expirationDate?`, and `binDetails?`.
+    -   Defined placeholder types for future `AchPaymentMethodDetails` and a union `PaymentMethodSpecificDetails` for extensibility.
+-   **Core Component Logic (`exerp-odin-cc-form.tsx`):**
+    -   Updated to extract `cardBrand`, `accountNumber` (for `maskedAccountNumber` and `last4`), `expirationDate`, and `binDetails` from the `OdinPay.js` success result.
+    -   Populates and emits these details in the new `OdinSubmitPayload` structure via the `odinSubmitInternal` event.
+-   **Facade (`odin-dropin/index.ts`):**
+    -   Updated to re-export the new and modified types related to the success payload.
+-   **Demo Application (`apps/demo/App.vue`):**
+    -   Modified the "Results" section to display the new fields: `paymentMethodType`, `cardBrand`, `last4`, `maskedAccountNumber`, `expirationDate`, and `binDetails`.
+-   **Documentation:**
+    -   Updated `packages/odin-dropin/README.md` and `docs/design/SYSTEM_OVERVIEW.md` to reflect the new success payload structure.
+
+### Current Status:
+-   The facade now provides a more detailed success payload.
+-   The demo application correctly displays this additional information.
+-   Relevant documentation has been updated.

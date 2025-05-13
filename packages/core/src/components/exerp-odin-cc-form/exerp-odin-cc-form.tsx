@@ -214,19 +214,6 @@ export class ExerpOdinCcForm {
   }
 
   private componentId = `exerp-odin-cc-form-${Math.random().toString(36).substring(2, 9)}`;
-  private cardInfoId = `${this.componentId}-card-info`;
-  private nameOnCardId = `${this.componentId}-name-on-card`;
-  private postalCodeId = `${this.componentId}-postal-code`;
-  private odinSubmitButtonId = `${this.componentId}-odin-submit-button`;
-  private visibleSubmitButtonId = `${this.componentId}-visible-submit-button`;
-
-  private addressLine1Id = `${this.componentId}-address-line1`;
-  private addressLine2Id = `${this.componentId}-address-line2`;
-  private cityId = `${this.componentId}-city`;
-  private stateId = `${this.componentId}-state`;
-  private countryId = `${this.componentId}-country`;
-  private emailAddressId = `${this.componentId}-email-address`;
-  private phoneNumberId = `${this.componentId}-phone-number`;
 
   /** Helper to check if a field should be rendered */
   private isFieldEnabled(fieldName: keyof BillingFieldsConfig): boolean {
@@ -445,36 +432,33 @@ export class ExerpOdinCcForm {
     const odinPayFields: any = {
       // Base required fields for OdinPay card form
       cardInformation: {
-        selector: this.cardInfoId,
-        // ariaLabel: this.getAriaLabel('cardInformation'), // Future: Add Aria Label customization
+        selector: this.getFieldId('cardInformation'),
       },
       postalCode: {
-        selector: this.postalCodeId,
-        placeholder: this.getPlaceholder('postalCode'), // Use helper for placeholder
-        // ariaLabel: this.getAriaLabel('postalCode'), // Future
+        selector: this.getFieldId('postalCode'),
+        placeholder: this.getPlaceholder('postalCode'),
       },
     };
 
     // Define the mapping from our config keys to the OdinPay field keys and their container IDs
     const optionalFieldMapping: { [key in OptionalBillingFieldName]: string } = {
-      name: this.nameOnCardId,
-      addressLine1: this.addressLine1Id,
-      addressLine2: this.addressLine2Id,
-      city: this.cityId,
-      state: this.stateId,
-      country: this.countryId,
-      emailAddress: this.emailAddressId,
-      phoneNumber: this.phoneNumberId,
+      name: this.getFieldId('name'),
+      addressLine1: this.getFieldId('addressLine1'),
+      addressLine2: this.getFieldId('addressLine2'),
+      city: this.getFieldId('city'),
+      state: this.getFieldId('state'),
+      country: this.getFieldId('country'),
+      emailAddress: this.getFieldId('emailAddress'),
+      phoneNumber: this.getFieldId('phoneNumber'),
     };
 
     // Iterate over the mapping to add configured optional fields
     for (const fieldName in optionalFieldMapping) {
       // Check if the field is enabled in our component's config
       if (this.isFieldEnabled(fieldName as OptionalBillingFieldName)) {
-        const fieldId = optionalFieldMapping[fieldName as OptionalBillingFieldName];
         // Add the field config to the object OdinPay expects
         odinPayFields[fieldName] = {
-          selector: fieldId,
+          selector: optionalFieldMapping[fieldName as OptionalBillingFieldName],
           placeholder: this.getPlaceholder(fieldName as OptionalBillingFieldName), // Get custom/default placeholder
           // ariaLabel: this.getAriaLabel(fieldName), // Future
         };
@@ -488,7 +472,7 @@ export class ExerpOdinCcForm {
       this.odinPayInstance.createCardForm({
         isSingleUse: this.isSingleUse,
         submitButton: {
-          selector: this.odinSubmitButtonId,
+          selector: this.getFieldId('odinSubmitButton'),
           callback: (result: any) => {
             // Note: result is still 'any' as it comes from external lib
             this.log('DEBUG', 'OdinPay submit callback RAW result:', JSON.stringify(result, null, 2));
@@ -602,7 +586,7 @@ export class ExerpOdinCcForm {
     this.isLoading = true;
 
     // Find the hidden button and click it programmatically
-    const odinButton = document.getElementById(this.odinSubmitButtonId);
+    const odinButton = document.getElementById(this.getFieldId('odinSubmitButton'));
     if (odinButton) {
       this.log('DEBUG', 'Programmatically clicking hidden Odin button.');
       odinButton.click();
@@ -675,17 +659,55 @@ export class ExerpOdinCcForm {
     return payload;
   }
 
-  render() {
-    const isButtonDisabled = this.isLoading || !this.odinFormRenderedBySDK || !!this.initializationError;
+  private getFieldId(fieldName: string): string {
+    // Normalize fieldName for use in ID, e.g., 'cardInformation' -> 'card-information'
+    const normalizedFieldName = fieldName.replace(/([A-Z])/g, '-$1').toLowerCase();
+    return `${this.componentId}-${normalizedFieldName}`;
+  }
 
-    // 🧑‍💻 Define the order of fields for rendering
-    const fieldRenderOrder: (keyof BillingFieldsConfig)[] = [
+  private renderBillingField(fieldName: keyof BillingFieldsConfig, isAlwaysRendered: boolean = false) {
+    if (!isAlwaysRendered && !this.isFieldEnabled(fieldName)) {
+      return null; // Don't render if not enabled and not mandatory structural
+    }
+
+    const fieldId = this.getFieldId(fieldName as string); // Cast to string as getFieldId expects generic string
+    const label = this.getLabel(fieldName);
+
+    return (
+      <div class="odin-field-container" key={fieldName as string}>
+        <label htmlFor={fieldId}>{label}</label>
+        <div id={fieldId} class="odin-input"></div>
+      </div>
+    );
+  }
+
+  private renderSubmitArea() {
+    const isButtonDisabled = this.isLoading || !this.odinFormRenderedBySDK || !!this.initializationError;
+    const visibleSubmitButtonId = this.getFieldId('visibleSubmitButton');
+    const odinHiddenSubmitButtonId = this.getFieldId('odinSubmitButton');
+
+    return (
+      <div class="odin-submit-container">
+        <button id={visibleSubmitButtonId} class="odin-submit-button" type="button" disabled={isButtonDisabled} onClick={this.handleVisibleSubmitClick}>
+          {this.isLoading ? 'Loading...' : 'Pay'}
+        </button>
+        <button id={odinHiddenSubmitButtonId} type="button" style={{ display: 'none' }} aria-hidden="true"></button>
+        <div class="odin-form-footer">Secured by ODIN Pay</div>
+      </div>
+    );
+  }
+
+  render() {
+    // Define the order of fields for rendering
+    // Note: cardInformation is handled separately first as it's always present.
+    // postalCode is also handled as always present structurally.
+    const optionalFieldRenderOrder: OptionalBillingFieldName[] = [
       'name',
       'addressLine1',
       'addressLine2',
       'city',
       'state',
-      'postalCode', // Keep postal code near address fields
+      // 'postalCode' is handled below as it's structurally mandatory
       'country',
       'emailAddress',
       'phoneNumber',
@@ -701,73 +723,16 @@ export class ExerpOdinCcForm {
         )}
 
         {/* Card Information */}
-        <div class="odin-field-container">
-          <label htmlFor={this.cardInfoId}>{this.getLabel('cardInformation')}</label>
-          <div id={this.cardInfoId} class="odin-input"></div>
-        </div>
+        {this.renderBillingField('cardInformation', true)}
 
         {/* Dynamically Rendered Billing Fields */}
-        {fieldRenderOrder.map(fieldName => {
-          // Always render the container for postalCode as OdinPay needs it, but respect custom label/placeholder
-          if (fieldName === 'postalCode') {
-            return (
-              <div class="odin-field-container" key={fieldName}>
-                <label htmlFor={this.postalCodeId}>{this.getLabel(fieldName)}</label>
-                <div id={this.postalCodeId} class="odin-input"></div>
-              </div>
-            );
-          }
-          // For other fields, check if enabled in config
-          else if (this.isFieldEnabled(fieldName)) {
-            // Determine the correct ID based on field name
-            let fieldId: string;
-            switch (fieldName) {
-              case 'name':
-                fieldId = this.nameOnCardId;
-                break;
-              case 'addressLine1':
-                fieldId = this.addressLine1Id;
-                break;
-              case 'addressLine2':
-                fieldId = this.addressLine2Id;
-                break;
-              case 'city':
-                fieldId = this.cityId;
-                break;
-              case 'state':
-                fieldId = this.stateId;
-                break;
-              case 'country':
-                fieldId = this.countryId;
-                break;
-              case 'emailAddress':
-                fieldId = this.emailAddressId;
-                break;
-              case 'phoneNumber':
-                fieldId = this.phoneNumberId;
-                break;
-              default:
-                fieldId = `${this.componentId}-${fieldName}`; // Fallback ID
-            }
+        {optionalFieldRenderOrder.map(fieldName => this.renderBillingField(fieldName, false))}
 
-            return (
-              <div class="odin-field-container" key={fieldName}>
-                <label htmlFor={fieldId}>{this.getLabel(fieldName)}</label>
-                <div id={fieldId} class="odin-input"></div>
-              </div>
-            );
-          }
-          return null; // Don't render if not enabled
-        })}
+        {/* Postal Code - Always rendered structurally */}
+        {this.renderBillingField('postalCode', true)}
 
         {/* Submit Area */}
-        <div class="odin-submit-container">
-          <button id={this.visibleSubmitButtonId} class="odin-submit-button" type="button" disabled={isButtonDisabled} onClick={this.handleVisibleSubmitClick}>
-            {this.isLoading ? 'Loading...' : 'Pay'}
-          </button>
-          <button id={this.odinSubmitButtonId} type="button" style={{ display: 'none' }} aria-hidden="true"></button>
-          <div class="odin-form-footer">Secured by ODIN Pay</div>
-        </div>
+        {this.renderSubmitArea()}
       </div>
     );
   }

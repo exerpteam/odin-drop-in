@@ -2,7 +2,7 @@
 
 **1. Overview & Goal**
 
-The primary goal is to create the foundational codebase and initial functionality for a reusable, framework-agnostic JavaScript "Drop-in" UI component library for ODIN Payments. This component will allow Exerp's customers to securely capture payment details within their own web applications, similar in concept to Adyen's Web Drop-in.
+The primary goal is to create the foundational codebase and initial functionality for a reusable, framework-agnostic JavaScript "Drop-in" UI component library for ODIN Payments. This component will allow Exerp's customers to securely capture payment details within their own web applications.
 
 This MVP focuses _exclusively_ on:
 

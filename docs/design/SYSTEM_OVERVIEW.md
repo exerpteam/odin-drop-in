@@ -137,9 +137,23 @@ When the user interacts with the form and initiates a submission:
     *   `isLoading` state is set to `false`. Any error message might be displayed in the component's UI.
 5.  **Facade Package (`OdinDropin` class):**
     *   The event listener for `odinSubmitInternal` (or `odinErrorInternal`) is triggered.
-    *   It calls the corresponding `onSubmit` callback (with `{ paymentMethodId }`) or `onError` callback (with the structured `OdinPayErrorPayload`) provided by the host application during initialization.
+    *   It calls the corresponding `onSubmit` callback or `onError` callback provided by the host application during initialization.
+    *   For `onSubmit`, the payload is an `OdinSubmitPayload` object containing:
+        *   `paymentMethodId` (`string`): The tokenized payment method identifier.
+        *   `paymentMethodType` (`'CARD'`): Indicates the type of payment method (Only `'CARD'` for now).
+        *   `billingInformation?` (`OdinPayBillingInformation`): Optional object with collected billing details (name, email, phone, address).
+        *   `details?` (`CardPaymentMethodDetails | ...`): Optional object with details specific to the `paymentMethodType`. For `'CARD'`, this includes:
+            *   `cardBrand?` (`string`)
+            *   `last4?` (`string`)
+            *   `maskedAccountNumber?` (`string`)
+            *   `expirationDate?` (`string`)
+            *   `binDetails?` (`any`)
+    *   For `onError`, the payload is the structured `OdinPayErrorPayload`.
+
 6.  **Host Application:**
-    *   Receives the `paymentMethodId` and optional `billingInformation` (on success) or error details (on failure) and proceeds with its application-specific logic (e.g., sending the `paymentMethodId` to its backend for payment processing or displaying an error message to the user).
+    *   Receives the `OdinSubmitPayload` (on success) or `OdinPayErrorPayload` (on failure).
+    *   On success, it can use the `paymentMethodId` for backend processing, `paymentMethodType` to understand the `details` object, and display relevant information like `cardBrand`, `last4`, or `billingInformation` to the user.
+    *   Proceeds with its application-specific logic.
 
 ### 4.3. Error Handling Flow
 

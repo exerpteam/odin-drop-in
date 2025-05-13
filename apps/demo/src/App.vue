@@ -223,59 +223,59 @@ onMounted(() => {
   <div class="demo-container">
     <h1>Exerp ODIN Drop-in Demo (Vue + TS)</h1>
 
+    <!-- Global Configuration Section -->
+    <div class="global-config-section">
+      <h2>Global Configuration</h2>
+      <div class="global-config-row">
+        <label for="publicToken" class="sr-only">ODIN Public Token:</label>
+        <!-- sr-only for accessibility if label is visually implied -->
+        <input
+          id="publicToken"
+          type="text"
+          v-model="odinPublicToken"
+          placeholder="Paste your test public token here"
+          class="full-width-input"
+        />
+      </div>
+      <div class="global-config-row multi-control-row">
+        <div>
+          <label for="countryCode">Country Code:</label>
+          <select id="countryCode" v-model="countryCode">
+            <option value="US">US - United States</option>
+            <option value="CA">CA - Canada</option>
+          </select>
+        </div>
+        <div class="checkbox-group">
+          <input id="isSingleUse" type="checkbox" v-model="isSingleUse" />
+          <label for="isSingleUse">Is Single Use</label>
+        </div>
+        <div>
+          <label for="logLevelSelect">Log Level:</label>
+          <select id="logLevelSelect" v-model="selectedLogLevel">
+            <option
+              v-for="level in availableLogLevels"
+              :key="level"
+              :value="level"
+            >
+              {{ level }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- END: Global Configuration Section -->
+
     <div class="layout-container">
+      <!-- Column for Billing Field Configuration -->
       <div class="config-column">
         <div class="config-section">
-          <h2>Configuration</h2>
-          <div>
-            <label for="publicToken">ODIN Public Token:</label>
-            <input
-              id="publicToken"
-              type="text"
-              v-model="odinPublicToken"
-              placeholder="Paste your test public token here"
-            />
-          </div>
-
-          <div style="margin-top: 15px">
-            <label for="countryCode">Country Code:</label>
-            <select id="countryCode" v-model="countryCode">
-              <option value="US">US - United States</option>
-              <option value="CA">CA - Canada</option>
-            </select>
-          </div>
-
-          <div style="margin-top: 15px; display: flex; align-items: center">
-            <input
-              id="isSingleUse"
-              type="checkbox"
-              v-model="isSingleUse"
-              style="margin-right: 8px"
-            />
-            <label for="isSingleUse"
-              >Is Single Use (Token intended for one-time payment?)</label
-            >
-          </div>
-
-          <div style="margin-top: 15px">
-            <label for="logLevelSelect">Log Level:</label>
-            <select id="logLevelSelect" v-model="selectedLogLevel">
-              <option
-                v-for="level in availableLogLevels"
-                :key="level"
-                :value="level"
-              >
-                {{ level }}
-              </option>
-            </select>
-          </div>
-
+          <!-- This was previously named 'config-section', keeping for styles -->
           <h3
             style="
-              margin-top: 25px;
+              margin-top: 0; /* Adjusted for new layout */
               margin-bottom: 15px;
-              border-top: 1px solid #eee;
-              padding-top: 20px;
+              border-top: none; /* Removed top border as it's now distinct */
+              padding-top: 0; /* Removed top padding */
             "
           >
             Billing Field Configuration:
@@ -369,24 +369,54 @@ onMounted(() => {
               Success! Payment Method ID: <code>{{ paymentMethodId }}</code>
             </p>
 
+            <div v-if="paymentResult" class="payment-details-subsection">
+              <p v-if="paymentResult.paymentMethodType">
+                <strong>Type:</strong>
+                <code>{{ paymentResult.paymentMethodType }}</code>
+              </p>
+
+              <div
+                v-if="
+                  paymentResult.paymentMethodType === 'CARD' &&
+                  paymentResult.details
+                "
+              >
+                <h4>Card Details:</h4>
+                <p v-if="paymentResult.details.cardBrand">
+                  <strong>Brand:</strong>
+                  <code>{{ paymentResult.details.cardBrand }}</code>
+                </p>
+                <p v-if="paymentResult.details.last4">
+                  <strong>Last 4:</strong>
+                  <code>{{ paymentResult.details.last4 }}</code>
+                </p>
+                <p v-if="paymentResult.details.maskedAccountNumber">
+                  <strong>Masked Number:</strong>
+                  <code>{{ paymentResult.details.maskedAccountNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.expirationDate">
+                  <strong>Expires:</strong>
+                  <code>{{ paymentResult.details.expirationDate }}</code>
+                </p>
+                <div v-if="paymentResult.details.binDetails">
+                  <strong>BIN Details:</strong>
+                  <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.details.binDetails, null, 2) }}</code></pre>
+                </div>
+              </div>
+              <!-- TODO: Add v-if for ACH details here in the future -->
+            </div>
+            <!-- END: Display New Payment Method Details -->
+
             <div
               v-if="paymentResult?.billingInformation"
-              style="
-                margin-top: 10px;
-                padding-top: 10px;
-                border-top: 1px solid #9ae6b4;
-              "
+              class="billing-details-subsection"
             >
               <strong>Billing Information Received:</strong>
               <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.billingInformation, null, 2) }}</code></pre>
             </div>
             <div
               v-else
-              style="
-                margin-top: 10px;
-                padding-top: 10px;
-                border-top: 1px solid #9ae6b4;
-              "
+              class="billing-details-subsection"
             >
               <p><em>No billing information returned in result.</em></p>
             </div>
@@ -427,7 +457,7 @@ onMounted(() => {
       </div>
       <!-- Display Column -->
     </div>
-    <!-- Add main layout container -->
+    <!-- End main layout container -->
   </div>
   <!-- End of .demo-container -->
 </template>
@@ -510,7 +540,7 @@ h1 {
   background-color: #38a169; /* Darker green */
 }
 
-/* 🧑‍💻 Add styles for field config layout */
+/* styles for field config layout */
 .config-section h2,
 .config-section h3 {
   margin-top: 0;
@@ -560,6 +590,103 @@ h1 {
 .field-config-row input[type="checkbox"] {
   margin-left: 0;
   margin-right: 5px; /* Space after checkbox */
+}
+
+.global-config-section {
+  background-color: #ffffff; /* Match other sections */
+  padding: 25px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 30px; /* Space before the two-column layout */
+}
+
+.global-config-section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2d3748;
+  font-weight: 600;
+  border-bottom: 1px solid #edf2f7;
+  padding-bottom: 10px;
+}
+
+.global-config-row {
+  display: flex;
+  align-items: flex-start; /* Align items to the top for multi-line labels */
+  margin-bottom: 15px;
+  gap: 20px; /* Space between items in a row */
+}
+
+.global-config-row .full-width-input {
+  flex-grow: 1; /* Make token input take full width */
+}
+
+.global-config-row.multi-control-row > div {
+  flex: 1; /* Distribute space among control groups */
+  display: flex;
+  flex-direction: column; /* Stack label and select/checkbox */
+}
+.global-config-row.multi-control-row > div.checkbox-group {
+  flex-direction: row; /* Align checkbox and its label horizontally */
+  align-items: center; /* Center checkbox with its label */
+  flex-grow: 0.5; /* Give it a bit less space if needed */
+}
+
+.global-config-row label {
+  /* font-weight: 600; */ /* Already in .config-section label, but can be specific if needed */
+  margin-bottom: 8px; /* Space between label and control */
+  display: block; /* Ensure label is on its own line if not in a flex row with input */
+  color: #4a5568;
+  font-size: 0.95em;
+}
+.global-config-row .checkbox-group label {
+  margin-bottom: 0; /* Reset margin for checkbox label */
+  margin-left: 8px; /* Space between checkbox and its label */
+  font-weight: normal; /* Make it normal weight */
+}
+
+.global-config-row input[type="text"],
+.global-config-row select {
+  width: 100%; /* Make inputs/selects take full width of their container */
+  box-sizing: border-box;
+  padding: 12px;
+  /* margin-bottom: 0; */ /* Removed as row has margin-bottom */
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 1em;
+}
+.global-config-row input[type="checkbox"] {
+  /* Checkbox specific styles if needed, often browser default is fine */
+  margin-top: 0; /* Align with other controls if labels are above */
+}
+
+/* Accessibility helper for visually hidden labels */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Adjustments for the h3 in config-column */
+.config-column .config-section h3 {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
+}
+
+/* END: Styles for Global Configuration Section */
+
+/* Ensure layout-container still works as expected */
+.layout-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  /* margin-top: 30px; */ /* This might be redundant if global-config-section has margin-bottom */
 }
 
 .layout-container {
@@ -650,6 +777,30 @@ label[for="enableNameField"] + input[type="checkbox"] {
   border: 1px solid #c6f6d5;
   border-radius: 4px;
   margin-top: 5px;
+}
+
+.payment-details-subsection,
+.billing-details-subsection {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #9ae6b4; /* Light green border */
+}
+
+.payment-details-subsection h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #2f855a; /* Darker green to match success text */
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.payment-details-subsection p,
+.billing-details-subsection p {
+  margin-bottom: 5px; /* Tighter spacing for detail lines */
+}
+
+.results-section .success-message {
+  text-align: left; /* Ensure overall success message content aligns left */
 }
 
 .success-message {
