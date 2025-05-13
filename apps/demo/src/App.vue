@@ -5,14 +5,25 @@ import {
   OdinPayErrorPayload,
   FieldCustomization,
   OdinSubmitPayload,
+  type LogLevel,
 } from "@exerp/odin-dropin";
 
 type DropinBillingFieldsConfig =
   import("@exerp/odin-dropin").BillingFieldsConfig;
 
+const availableLogLevels: LogLevel[] = [
+  "NONE",
+  "ERROR",
+  "WARN",
+  "INFO",
+  "DEBUG",
+];
+
 // --- State ---
 const odinPublicToken = ref("");
 const countryCode = ref<"US" | "CA">("US");
+const isSingleUse = ref<boolean>(true);
+const selectedLogLevel = ref<LogLevel>("WARN");
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
 const paymentResult = ref<OdinSubmitPayload | null>(null);
@@ -106,7 +117,7 @@ const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
     }
   }
   console.log(
-    "[DemoApp] Generated billingFieldsConfig:",
+    "[Demo App] Generated billingFieldsConfig:",
     JSON.stringify(config)
   ); // Debug log
   return config;
@@ -117,13 +128,14 @@ async function initializeAndMountDropin() {
   paymentMethodId.value = null;
   paymentResult.value = null;
   displayedError.value = null;
-  console.log("Attempting to initialize Drop-in...");
+  console.log("[Demo App] Attempting to initialize Drop-in...");
 
   if (!odinPublicToken.value) {
     displayedError.value = {
       code: "DEMO_APP_VALIDATION",
       message: "Please provide an ODIN Public Token.",
     };
+    console.error("[Demo App] Error: No ODIN Public Token provided.");
     return;
   }
 
@@ -135,6 +147,7 @@ async function initializeAndMountDropin() {
       code: "DEMO_APP_VALIDATION",
       message: "Please select a valid Country Code (US or CA).",
     };
+    console.error("[Demo App] Error: Invalid country code selected.");
     return;
   }
 
@@ -143,6 +156,7 @@ async function initializeAndMountDropin() {
       code: "DEMO_APP_ERROR",
       message: "Drop-in container element not found.",
     };
+    console.error("[Demo App] Error: Drop-in container element not found.");
     return;
   }
 
@@ -157,22 +171,23 @@ async function initializeAndMountDropin() {
 
   try {
     console.log(
-      `[DemoApp] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}`
+      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, isSingleUse: ${isSingleUse.value}`
     );
     // Actual Drop-in Initialization Logic
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken.value,
       countryCode: countryCode.value,
-      isSingleUse: true, // TODO: We should add a toggle for this later
+      isSingleUse: isSingleUse.value,
       billingFieldsConfig: currentBillingFieldsConfig.value,
+      logLevel: selectedLogLevel.value,
       onSubmit: (result) => {
-        console.log("Demo App onSubmit:", result);
+        console.log("[Demo App] onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
         paymentResult.value = result;
         displayedError.value = null;
       },
       onError: (error) => {
-        console.error("Demo App onError:", error);
+        console.error("[Demo App] onError:", error);
         displayedError!.value = error;
         paymentMethodId.value = null;
         paymentResult.value = null;
@@ -181,7 +196,10 @@ async function initializeAndMountDropin() {
 
     // Pass the actual HTMLElement to mount
     odinDropinInstance.mount(dropinContainerRef.value);
-    console.log("Drop-in mount called on:", dropinContainerRef.value);
+    console.log(
+      "[Demo App] Drop-in mount called on:",
+      dropinContainerRef.value
+    );
   } catch (error: any) {
     console.error("Failed to initialize or mount Drop-in:", error);
     displayedError.value = {
@@ -205,164 +223,213 @@ onMounted(() => {
   <div class="demo-container">
     <h1>Exerp ODIN Drop-in Demo (Vue + TS)</h1>
 
-    <div class="config-section">
-      <h2>Configuration</h2>
-      <div>
-        <label for="publicToken">ODIN Public Token:</label>
-        <input
-          id="publicToken"
-          type="text"
-          v-model="odinPublicToken"
-          placeholder="Paste your test public token here"
-        />
-      </div>
-
-      <div style="margin-top: 15px">
-        <label for="countryCode">Country Code:</label>
-        <select id="countryCode" v-model="countryCode">
-          <option value="US">US - United States</option>
-          <option value="CA">CA - Canada</option>
-        </select>
-      </div>
-
-      <h3
-        style="
-          margin-top: 25px;
-          margin-bottom: 15px;
-          border-top: 1px solid #eee;
-          padding-top: 20px;
-        "
-      >
-        Billing Field Configuration:
-      </h3>
-
-      <template v-for="(fieldData, fieldName) in fieldConfigs" :key="fieldName">
-        <div class="field-config-item">
-          <h4>
-            {{
-              fieldName === "name"
-                ? "Name on Card"
-                : fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
-            }}
-            Field ('{{ fieldName }}')
-          </h4>
-
-          <div
-            class="field-config-row"
-            v-if="fieldName !== 'postalCode' && fieldName !== 'cardInformation'"
-          >
-            <label :for="`enable-${fieldName}`">Enable:</label>
+    <div class="layout-container">
+      <div class="config-column">
+        <div class="config-section">
+          <h2>Configuration</h2>
+          <div>
+            <label for="publicToken">ODIN Public Token:</label>
             <input
+              id="publicToken"
+              type="text"
+              v-model="odinPublicToken"
+              placeholder="Paste your test public token here"
+            />
+          </div>
+
+          <div style="margin-top: 15px">
+            <label for="countryCode">Country Code:</label>
+            <select id="countryCode" v-model="countryCode">
+              <option value="US">US - United States</option>
+              <option value="CA">CA - Canada</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 15px; display: flex; align-items: center">
+            <input
+              id="isSingleUse"
               type="checkbox"
-              :id="`enable-${fieldName}`"
-              v-model="fieldData.enabled"
+              v-model="isSingleUse"
+              style="margin-right: 8px"
             />
+            <label for="isSingleUse"
+              >Is Single Use (Token intended for one-time payment?)</label
+            >
           </div>
 
-          <div class="field-config-row">
-            <label :for="`label-${fieldName}`">Custom Label:</label>
-            <input
-              type="text"
-              :id="`label-${fieldName}`"
-              v-model="fieldData.label"
-              :placeholder="`Default: ${getDefaultLabel(fieldName as keyof typeof fieldConfigs)}`"
-              :disabled="
-                fieldName !== 'postalCode' &&
-                fieldName !== 'cardInformation' &&
-                !fieldData.enabled
-              "
-            />
-          </div>
-
-          <div class="field-config-row" v-if="fieldName !== 'cardInformation'">
-            <label :for="`placeholder-${fieldName}`">Custom Placeholder:</label>
-            <input
-              type="text"
-              :id="`placeholder-${fieldName}`"
-              v-model="fieldData.placeholder"
-              :placeholder="`Default: ${getDefaultPlaceholder(fieldName as keyof typeof fieldConfigs)}`"
-              :disabled="
-                fieldName !== 'postalCode' &&
-                fieldName !== 'cardInformation' &&
-                !fieldData.enabled
-              "
-            />
-          </div>
-        </div>
-      </template>
-
-      <button @click="initializeAndMountDropin" style="margin-top: 20px">
-        Initialize & Mount Drop-in
-      </button>
-    </div>
-
-    <div class="dropin-section">
-      <h2>Drop-in Area:</h2>
-      <div id="odin-dropin-container" ref="dropinContainerRef">
-        <!-- The ODIN Drop-in will be mounted here -->
-      </div>
-    </div>
-
-    <div class="results-section">
-      <h2>Results:</h2>
-      <div v-if="paymentMethodId" class="success-message">
-        <p>
-          Success! Payment Method ID: <code>{{ paymentMethodId }}</code>
-        </p>
-
-        <div
-          v-if="paymentResult?.billingInformation"
-          style="
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #9ae6b4;
-          "
-        >
-          <strong>Billing Information Received:</strong>
-          <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.billingInformation, null, 2) }}</code></pre>
-        </div>
-        <div
-          v-else
-          style="
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #9ae6b4;
-          "
-        >
-          <p><em>No billing information returned in result.</em></p>
-        </div>
-      </div>
-
-      <div v-if="displayedError" class="error-message">
-        <p v-if="displayedError.code">
-          <strong>Error Code:</strong> <code>{{ displayedError.code }}</code>
-        </p>
-        <p v-if="displayedError.message">
-          <strong>Message:</strong> <code>{{ displayedError.message }}</code>
-        </p>
-        <div v-if="displayedError.httpStatusCode">
-          <p>
-            <strong>HTTP Status:</strong>
-            <code>{{ displayedError.httpStatusCode }}</code>
-          </p>
-        </div>
-        <div
-          v-if="
-            displayedError.fieldErrors && displayedError.fieldErrors.length > 0
-          "
-        >
-          <p><strong>Field Specific Errors:</strong></p>
-          <ul style="text-align: left; margin-left: 20px">
-            <li v-for="(fe, idx) in displayedError.fieldErrors" :key="idx">
-              <code
-                ><strong>{{ fe.field }}:</strong> {{ fe.message }}</code
+          <div style="margin-top: 15px">
+            <label for="logLevelSelect">Log Level:</label>
+            <select id="logLevelSelect" v-model="selectedLogLevel">
+              <option
+                v-for="level in availableLogLevels"
+                :key="level"
+                :value="level"
               >
-            </li>
-          </ul>
+                {{ level }}
+              </option>
+            </select>
+          </div>
+
+          <h3
+            style="
+              margin-top: 25px;
+              margin-bottom: 15px;
+              border-top: 1px solid #eee;
+              padding-top: 20px;
+            "
+          >
+            Billing Field Configuration:
+          </h3>
+
+          <template
+            v-for="(fieldData, fieldName) in fieldConfigs"
+            :key="fieldName"
+          >
+            <div class="field-config-item">
+              <h4>
+                {{
+                  fieldName === "name"
+                    ? "Name on Card"
+                    : fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
+                }}
+                Field ('{{ fieldName }}')
+              </h4>
+
+              <div
+                class="field-config-row"
+                v-if="
+                  fieldName !== 'postalCode' && fieldName !== 'cardInformation'
+                "
+              >
+                <label :for="`enable-${fieldName}`">Enable:</label>
+                <input
+                  type="checkbox"
+                  :id="`enable-${fieldName}`"
+                  v-model="fieldData.enabled"
+                />
+              </div>
+
+              <div class="field-config-row">
+                <label :for="`label-${fieldName}`">Custom Label:</label>
+                <input
+                  type="text"
+                  :id="`label-${fieldName}`"
+                  v-model="fieldData.label"
+                  :placeholder="`Default: ${getDefaultLabel(fieldName as keyof typeof fieldConfigs)}`"
+                  :disabled="
+                    fieldName !== 'postalCode' &&
+                    fieldName !== 'cardInformation' &&
+                    !fieldData.enabled
+                  "
+                />
+              </div>
+
+              <div
+                class="field-config-row"
+                v-if="fieldName !== 'cardInformation'"
+              >
+                <label :for="`placeholder-${fieldName}`"
+                  >Custom Placeholder:</label
+                >
+                <input
+                  type="text"
+                  :id="`placeholder-${fieldName}`"
+                  v-model="fieldData.placeholder"
+                  :placeholder="`Default: ${getDefaultPlaceholder(fieldName as keyof typeof fieldConfigs)}`"
+                  :disabled="
+                    fieldName !== 'postalCode' &&
+                    fieldName !== 'cardInformation' &&
+                    !fieldData.enabled
+                  "
+                />
+              </div>
+            </div>
+          </template>
+
+          <button @click="initializeAndMountDropin" style="margin-top: 20px">
+            Initialize & Mount Drop-in
+          </button>
+        </div>
+        <!-- End of .config-section -->
+      </div>
+      <!-- END: Configuration Column -->
+
+      <div class="display-column">
+        <div class="dropin-section">
+          <h2>Drop-in Area:</h2>
+          <div id="odin-dropin-container" ref="dropinContainerRef">
+            <!-- The ODIN Drop-in will be mounted here -->
+          </div>
+        </div>
+
+        <div class="results-section">
+          <h2>Results:</h2>
+          <div v-if="paymentMethodId" class="success-message">
+            <p>
+              Success! Payment Method ID: <code>{{ paymentMethodId }}</code>
+            </p>
+
+            <div
+              v-if="paymentResult?.billingInformation"
+              style="
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid #9ae6b4;
+              "
+            >
+              <strong>Billing Information Received:</strong>
+              <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.billingInformation, null, 2) }}</code></pre>
+            </div>
+            <div
+              v-else
+              style="
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid #9ae6b4;
+              "
+            >
+              <p><em>No billing information returned in result.</em></p>
+            </div>
+          </div>
+
+          <div v-if="displayedError" class="error-message">
+            <p v-if="displayedError.code">
+              <strong>Error Code:</strong>
+              <code>{{ displayedError.code }}</code>
+            </p>
+            <p v-if="displayedError.message">
+              <strong>Message:</strong>
+              <code>{{ displayedError.message }}</code>
+            </p>
+            <div v-if="displayedError.httpStatusCode">
+              <p>
+                <strong>HTTP Status:</strong>
+                <code>{{ displayedError.httpStatusCode }}</code>
+              </p>
+            </div>
+            <div
+              v-if="
+                displayedError.fieldErrors &&
+                displayedError.fieldErrors.length > 0
+              "
+            >
+              <p><strong>Field Specific Errors:</strong></p>
+              <ul style="text-align: left; margin-left: 20px">
+                <li v-for="(fe, idx) in displayedError.fieldErrors" :key="idx">
+                  <code
+                    ><strong>{{ fe.field }}:</strong> {{ fe.message }}</code
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
+      <!-- Display Column -->
     </div>
+    <!-- Add main layout container -->
   </div>
+  <!-- End of .demo-container -->
 </template>
 
 <style scoped>
@@ -372,7 +439,7 @@ onMounted(() => {
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
     Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   padding: 30px;
-  max-width: 550px; /* Slightly narrower */
+  /* max-width: 550px; Slightly narrower */
   margin: 40px auto; /* More top/bottom margin */
   border: 1px solid #e2e8f0; /* Lighter border */
   border-radius: 8px;
@@ -494,6 +561,37 @@ h1 {
   margin-left: 0;
   margin-right: 5px; /* Space after checkbox */
 }
+
+.layout-container {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens if needed */
+  gap: 30px; /* Space between the columns */
+  margin-top: 30px; /* Add some space below the main title */
+}
+
+.config-column {
+  flex: 1; /* Allow config column to grow/shrink */
+  min-width: 350px; /* Minimum width before wrapping */
+  /* max-width: 50%; */ /* Optional: Limit max width */
+}
+
+.display-column {
+  flex: 1; /* Allow display column to grow/shrink */
+  min-width: 350px; /* Minimum width before wrapping */
+  /* max-width: 50%; */ /* Optional: Limit max width */
+}
+
+/* Adjustments for sections within columns */
+.config-column .config-section,
+.display-column .dropin-section,
+.display-column .results-section {
+  margin-bottom: 0; /* Remove bottom margin as gap handles spacing */
+}
+
+.display-column .results-section {
+  margin-top: 30px; /* Add space between dropin and results */
+}
+
 /* --- Adjustments for responsiveness --- */
 @media (max-width: 600px) {
   .field-config-row {

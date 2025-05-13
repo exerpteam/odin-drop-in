@@ -7,7 +7,14 @@ import type {
   BillingFieldsConfig as CoreBillingFieldsConfig,
   OdinPayBillingInformation as CoreOdinPayBillingInformation,
   FieldCustomization as CoreFieldCustomization,
-} from "../../core/dist/types/components/exerp-odin-cc-form/exerp-odin-cc-form"; 
+} from "../../core/dist/types/components/exerp-odin-cc-form/exerp-odin-cc-form";
+
+import {
+  log,
+  isLogLevelEnabled,
+  LogLevel,
+  DEFAULT_LOG_LEVEL,
+} from "./utils/logger";
 
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
@@ -23,23 +30,26 @@ interface OdinDropinInitializationParams {
   billingFieldsConfig?: CoreBillingFieldsConfig; //
   onSubmit: (result: CoreOdinPaySubmitPayload) => void;
   onError: (error: CoreOdinPayErrorPayload) => void;
+  logLevel?: LogLevel;
 }
 
 export class OdinDropin {
   private params: OdinDropinInitializationParams;
   private odinCcFormComponent: HTMLExerpOdinCcFormElement | null = null;
   private eventListenersAttached: boolean = false;
+  private currentLogLevel: LogLevel;
 
   constructor(params: OdinDropinInitializationParams) {
     this.params = params;
-    console.log(
-      "OdinDropin instance created. Public token:",
-      params.odinPublicToken,
-      "Country Code:",
-      params.countryCode,
-      "Billing Fields Config:",
-      params.billingFieldsConfig
-    );
+    this.currentLogLevel = params.logLevel ?? DEFAULT_LOG_LEVEL;
+
+    log(this.currentLogLevel, "INFO", "OdinDropin instance created.", {
+      // Log object for easier viewing
+      logLevel: this.currentLogLevel,
+      countryCode: params.countryCode,
+      billingFieldsConfigProvided: !!params.billingFieldsConfig,
+    });
+
     // The custom element <exerp-odin-cc-form> should already be defined by the import at the top.
   }
 
@@ -54,7 +64,9 @@ export class OdinDropin {
     }
 
     if (!mountPoint) {
-      console.error(
+      log(
+        this.currentLogLevel,
+        "ERROR",
         `OdinDropin: Mount point '${selectorOrElement}' not found.`
       );
       this.params.onError({
@@ -67,7 +79,7 @@ export class OdinDropin {
     if (!this.params.countryCode) {
       const errorMsg =
         "OdinDropin: 'countryCode' is missing in initialization parameters.";
-      console.error(errorMsg);
+      log(this.currentLogLevel, "ERROR", errorMsg);
       this.params.onError({
         code: "INIT_NO_COUNTRY_CODE_FACADE",
         message: errorMsg,
@@ -80,16 +92,16 @@ export class OdinDropin {
       "exerp-odin-cc-form"
     ) as HTMLExerpOdinCcFormElement;
     if (this.odinCcFormComponent) {
-      console.log(
-        "[Facade] Token to pass to component:",
-        this.params.odinPublicToken,
-        "Country Code to pass:",
-        this.params.countryCode,
-        "Billing Fields Config:",
-        this.params.billingFieldsConfig
-      );
+      log(this.currentLogLevel, "DEBUG", "[Facade] Setting component props:", {
+        tokenProvided: this.params.odinPublicToken,
+        countryCode: this.params.countryCode,
+        isSingleUse: this.params.isSingleUse ?? true, // Log effective value
+        logLevel: this.currentLogLevel, // Log the level being passed
+        billingFieldsConfig: this.params.billingFieldsConfig, // Log the config object (can be verbose)
+      });
       this.odinCcFormComponent.odinPublicToken = this.params.odinPublicToken;
       this.odinCcFormComponent.countryCode = this.params.countryCode;
+      this.odinCcFormComponent.logLevel = this.currentLogLevel;
 
       // Pass isSingleUse (handle undefined by defaulting as the component does)
       if (typeof this.params.isSingleUse === "boolean") {
@@ -101,7 +113,9 @@ export class OdinDropin {
           this.params.billingFieldsConfig;
       }
 
-      console.log(
+      log(
+        this.currentLogLevel,
+        "DEBUG",
         "[Facade] Component instance props set. Token:",
         this.odinCcFormComponent.odinPublicToken,
         "Country:",
@@ -121,13 +135,18 @@ export class OdinDropin {
       this.eventListenersAttached = true;
 
       mountPoint.appendChild(this.odinCcFormComponent);
-      console.log(
+      log(
+        this.currentLogLevel,
+        "INFO",
         "exerp-odin-cc-form mounted to",
-        mountPoint,
-        "with token, countryCode, isSingleUse, and billingFields config."
+        mountPoint
       );
     } else {
-      console.error("Failed to create exerp-odin-cc-form component instance.");
+      log(
+        this.currentLogLevel,
+        "ERROR",
+        "Failed to create exerp-odin-cc-form component instance."
+      );
       this.params.onError({
         code: "COMPONENT_CREATION_FAILED",
         message: "Failed to create Stencil component instance.",
@@ -136,18 +155,23 @@ export class OdinDropin {
   }
 
   private handleOdinSubmit = (event: CustomEvent<OdinPaySubmitPayload>) => {
-    console.log(
-      "[Facade] handleOdinSubmit TRIGGERED. Event detail:",
-      event.detail
-    ); // Log to confirm it's hit
+    log(this.currentLogLevel, "INFO", "[Facade] handleOdinSubmit TRIGGERED.");
+    if (isLogLevelEnabled(this.currentLogLevel, "DEBUG")) {
+      log(
+        this.currentLogLevel,
+        "DEBUG",
+        "[Facade] Submit Event Detail:",
+        event.detail
+      );
+    }
     this.params.onSubmit(event.detail); // Call the host app's callback
   };
 
   private handleOdinError = (event: CustomEvent<CoreOdinPayErrorPayload>) => {
-    console.log(
-      "[Facade] handleOdinError TRIGGERED. Event detail:",
-      event.detail
-    ); // Log to confirm it's hit
+    log(this.currentLogLevel, 'ERROR', '[Facade] handleOdinError TRIGGERED.');
+   if (isLogLevelEnabled(this.currentLogLevel, 'WARN')) {
+      log(this.currentLogLevel, 'WARN', '[Facade] Error Event Detail:', event.detail);
+   }
     this.params.onError(event.detail); // Call the host app's callback
   };
 
@@ -171,7 +195,7 @@ export class OdinDropin {
         );
       }
       this.odinCcFormComponent = null;
-      console.log("exerp-odin-cc-form unmounted.");
+      log(this.currentLogLevel, 'INFO', 'exerp-odin-cc-form unmounted.');
     }
   }
 }
@@ -193,3 +217,5 @@ export type {
   // Export the core submit payload type directly or create a facade-specific one if needed
   CoreOdinPaySubmitPayload as OdinSubmitPayload,
 };
+
+export type { LogLevel };

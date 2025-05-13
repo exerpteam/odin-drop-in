@@ -2,7 +2,7 @@
 
 This document lists planned features and enhancements beyond the initial MVP scope.
 
-## Core Component Enhancements
+## 👉 Core Component Enhancements
 
 *   ✅ **Error Handling:** 
     *   **Requirement:** Implement error handling for the core component.
@@ -43,18 +43,18 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Details:** The `onSubmit` callback from the facade now includes an optional `billingInformation` object in its result payload, matching the structure returned by `OdinPay.js`.
     *   **Status:** Implemented
 
-*   **Theme Configuration Pass-through:**
+*   👉 **Theme Configuration Pass-through:**
     *   **Requirement:** Allow host applications to pass a theme configuration object via the `@exerp/odin-dropin` facade (`config.theme`).
     *   **Details:** The core Stencil component (`exerp-odin-cc-form`) should accept this theme object as a prop. It should then use this object (merged with defaults) when initializing `OdinPay()` via its `theme` option. This allows host applications to customize the appearance of the input fields rendered by `OdinPay.js`.
         *   *Note: Current implementation hardcodes the theme structure due to a quirk in OdinPay.js options parsing. This task would involve revisiting how the theme is passed if OdinPay.js is updated or a more robust workaround is found.*
     *   **Status:** Deferred from MVP. Low priority. (Added note about current status)
 
-*  **Console Logging:**
-    *   **Requirement:** Add log level to the core component.
-    *   **Details:** Implement a log level configuration option to control the verbosity of console logs. This should be passed to `OdinPay.js` and used to filter logs accordingly.
-    *   **Status:** Pending design/implementation.
+*   ✅ **Configurable Logging Level**
+    *   **Requirement:** Add a mechanism to control the verbosity of console logging.
+    *   **Details:** Implemented an optional `logLevel` parameter ('NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG', default: 'WARN') for the `OdinDropin` facade constructor. This level is respected by both the facade and the core component to filter console messages. Demo app updated with UI to select the level.
+    *   **Status:** Implemented.
 
-## Demo Application Enhancements
+## ✅ Demo Application Enhancements
 
 *   ✅ **Initial Setup (`apps/demo`)**:
     *   **Requirement:** Create a basic Vue 3 + TS demo app using Vite.
@@ -66,22 +66,17 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Details:** Added a dropdown for 'US'/'CA'.
     *   **Status:** Implemented.
 
-*   ✅ **"Name on Card" Field Toggle**:
-    *   **Requirement:** Add UI in the demo app to toggle the `billingFieldsConfig.name` option.
-    *   **Details:** Added a checkbox.
-    *   **Status:** Implemented.
-
-*   **`isSingleUse` Toggle**
+*   ✅ **`isSingleUse` Toggle**
     *   **Requirement:** Add a UI toggle in the demo application to control the `isSingleUse` flag passed to the `OdinDropin`.
     *   **Details:** Will allow easier testing of both single-use and potentially saveable payment method token generation flows.
-    *   **Status:** Pending implementation.
+    *   **Status:** Implemented.
 
-*   **Configuration Section UI Refactor**
+*   ✅ **Configuration Section UI Refactor**
     *   **Requirement:** Improve the layout and organization of the configuration options in the demo app UI (`App.vue`).
     *   **Details:** As more options (country code, billing fields toggles, isSingleUse toggle, etc.) are added, the current single-column layout might become cluttered. Refactor needed for better usability during development and testing. Could involve grouping related options.
-    *   **Status:** Pending implementation.
+    *   **Status:** Implemented.
 
-## ACH Support
+## 👉 ACH Support
 
 *   **Requirement:** Implement support for capturing Bank Account (ACH) details.
 *   **Details:**
@@ -91,16 +86,7 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   Implement necessary UI and `OdinPay.createBankAccountForm()` integration.
 *   **Status:** Pending design/implementation.
 
-## Payment Agreement Features
-
-*   **Requirement:** Support flows for creating and managing payment agreements (Card-on-File / Recurring).
-*   **Details:**
-    *   Handle `$0` authorization (or workarounds like small auth + void) for creating agreements without initial payment (requires coordination with ODIN API capabilities).
-    *   Ensure `isSingleUse: false` is correctly utilized.
-    *   Support "update/replace" flows.
-*   **Status:** Pending design/implementation (blocked by $0 auth clarification).
-
-## Testing Strategy & Implementation
+## 👉 Testing Strategy & Implementation
 
 *   **Requirement:** Implement a comprehensive testing suite to ensure component reliability and prevent regressions.
 *   **Details:**
