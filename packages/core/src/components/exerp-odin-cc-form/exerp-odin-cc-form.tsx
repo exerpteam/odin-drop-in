@@ -3,14 +3,35 @@ import { Component, h, Prop, State, Watch, Event, EventEmitter } from '@stencil/
 type LogLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG';
 const DEFAULT_CORE_LOG_LEVEL: LogLevel = 'WARN';
 
-// 🧑‍💻 Declare OdinPay at the module level for type safety if you create a .d.ts file for it
+// Declare OdinPay at the module level for type safety if we create a .d.ts file for it
 //    or use 'any' for now.
 declare const OdinPay: any;
 
-// Define payload interfaces for events (can be moved/shared later)
+// Details specific to a Card payment method
+export interface CardPaymentMethodDetails {
+  cardBrand?: string;
+  last4?: string; // We'll aim to populate this
+  expirationDate?: string;
+  binDetails?: any; // Or a more specific type if known
+  maskedAccountNumber?: string; // The masked account number from OdinPay.js
+}
+
+// Placeholder for future ACH payment method details - define it now for structure
+export interface AchPaymentMethodDetails {
+  accountType?: string;
+  last4?: string;
+  bankName?: string;
+}
+
+// Union type for payment method specific details
+export type PaymentMethodSpecificDetails = CardPaymentMethodDetails | AchPaymentMethodDetails;
+
+// Define payload interfaces for events
 export interface OdinPaySubmitPayload {
   paymentMethodId: string;
+  paymentMethodType: 'CARD'; // For now, only 'CARD' is actively produced by this component
   billingInformation?: OdinPayBillingInformation;
+  details?: CardPaymentMethodDetails; // Specifically CardPaymentMethodDetails for this CC form
 }
 
 export interface OdinPayFieldError {
@@ -268,13 +289,13 @@ export class ExerpOdinCcForm {
   @Watch('odinPublicToken')
   async watchOdinPublicToken(newValue: string, oldValue: string) {
     if (newValue && newValue !== oldValue) {
-      this.log('DEBUG','odinPublicToken changed, re-initializing OdinPay. Current countryCode:', this.countryCode);
+      this.log('DEBUG', 'odinPublicToken changed, re-initializing OdinPay. Current countryCode:', this.countryCode);
       // Check for countryCode before re-initializing
       if (this.countryCode) {
         await this.initializeOdinPayAndForm();
       } else {
         const errorMsg = 'countryCode prop is missing on token change. Cannot re-initialize OdinPay.';
-        this.log('ERROR',errorMsg);
+        this.log('ERROR', errorMsg);
         // Optionally emit an error or handle as appropriate
         this.initializationError = errorMsg;
         this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE_ON_UPDATE' });
@@ -474,6 +495,7 @@ export class ExerpOdinCcForm {
 
             if (result && result.success === true && result.paymentMethod && result.paymentMethod.id) {
               this.log('DEBUG', 'Success! PaymentMethodID:', result.paymentMethod.id);
+              this.log('DEBUG', 'Full paymentMethod object from OdinPay.js:', JSON.stringify(result.paymentMethod, null, 2));
 
               // --- Extract billingInformation ---
               let billingInfo: OdinPayBillingInformation | undefined = undefined;
@@ -487,10 +509,37 @@ export class ExerpOdinCcForm {
               }
               // --- End Extracting billingInformation ---
 
+              // --- Extract Card Specific Details ---
+              const cardDetails: CardPaymentMethodDetails = {};
+              if (result.paymentMethod.cardBrand) {
+                cardDetails.cardBrand = result.paymentMethod.cardBrand;
+              }
+              if (result.paymentMethod.accountNumber) {
+                // This is usually the masked number like "************1111"
+                cardDetails.maskedAccountNumber = result.paymentMethod.accountNumber;
+                // Extract last4 if accountNumber is present and looks like a masked number
+                const maskedNumberString = String(result.paymentMethod.accountNumber);
+                if (maskedNumberString.length > 4) {
+                  cardDetails.last4 = maskedNumberString.slice(-4);
+                } else {
+                  cardDetails.last4 = maskedNumberString;
+                }
+              }
+              if (result.paymentMethod.expirationDate) {
+                cardDetails.expirationDate = result.paymentMethod.expirationDate;
+              }
+              if (result.paymentMethod.binDetails) {
+                cardDetails.binDetails = result.paymentMethod.binDetails;
+              }
+              this.log('DEBUG', 'Extracted cardDetails:', JSON.stringify(cardDetails, null, 2));
+              // --- END Extracting Card Specific Details ---
+
               // Emit success event
               this.odinSubmitInternal.emit({
                 paymentMethodId: result.paymentMethod.id,
+                paymentMethodType: 'CARD',
                 billingInformation: billingInfo,
+                details: cardDetails,
               });
             } else if (result && result.success === false) {
               // Handle error based on result.message
@@ -529,7 +578,8 @@ export class ExerpOdinCcForm {
 
     // --- Guard against submission if not properly initialized/rendered ---
     if (this.isLoading || !this.odinPayInstance || !this.odinFormRenderedBySDK || this.initializationError) {
-      this.log('WARN',
+      this.log(
+        'WARN',
         '[Core Component] Submission prevented. isLoading:',
         this.isLoading,
         'hasInstance:',

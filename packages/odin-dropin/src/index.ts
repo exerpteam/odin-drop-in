@@ -7,6 +7,9 @@ import type {
   BillingFieldsConfig as CoreBillingFieldsConfig,
   OdinPayBillingInformation as CoreOdinPayBillingInformation,
   FieldCustomization as CoreFieldCustomization,
+  CardPaymentMethodDetails as CoreCardPaymentMethodDetails,
+  AchPaymentMethodDetails as CoreAchPaymentMethodDetails,
+  PaymentMethodSpecificDetails as CorePaymentMethodSpecificDetails 
 } from "../../core/dist/types/components/exerp-odin-cc-form/exerp-odin-cc-form";
 
 import {
@@ -216,6 +219,9 @@ export type {
   CoreFieldCustomization as FieldCustomization,
   // Export the core submit payload type directly or create a facade-specific one if needed
   CoreOdinPaySubmitPayload as OdinSubmitPayload,
+  CoreCardPaymentMethodDetails as CardPaymentMethodDetails,
+  CoreAchPaymentMethodDetails as AchPaymentMethodDetails,
+  CorePaymentMethodSpecificDetails as PaymentMethodSpecificDetails,
+  LogLevel
 };
 
-export type { LogLevel };
