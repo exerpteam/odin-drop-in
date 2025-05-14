@@ -18,7 +18,7 @@ The ODIN Drop-in component is built upon the following core architectural princi
     *   The core component (`@exerp/odin-dropin-core`) is responsible for the direct interaction with `OdinPay.js` and rendering the payment UI.
     *   The facade package (`@exerp/odin-dropin`) handles the public API, component lifecycle management, and adapting host configurations for the core component.
 *   **Security:** Leverages `OdinPay.js` for handling sensitive payment information directly within iframes provided by ODIN, minimizing PCI scope for the host application. The drop-in component itself does not directly handle or store raw payment details.
-*   **Extensibility:** The architecture is designed to accommodate future enhancements, such as support for additional payment methods (e.g., ACH) and more advanced features, by adding new components or extending existing ones within the core package and exposing them through the facade.
+*   **Extensibility:** The architecture is designed to accommodate future enhancements, such as support for additional payment methods (e.g., ACH **which is now supported**) and more advanced features, by adding new components or extending existing ones within the core package and exposing them through the facade.
 *   **Developer Experience:** A local demo application and clear documentation aim to provide a smooth development and testing workflow for both contributors to the library and integrators.
 
 ## 3. System Components
@@ -36,11 +36,11 @@ The ODIN Drop-in workspace is a monorepo containing several key packages that wo
 *   **Technology:** [Stencil.js](https://stenciljs.com/) (for creating standard Web Components).
 *   **Purpose:** This internal package provides the fundamental building block(s) for the payment UI. It is not intended for direct consumption by host applications.
 *   **Key Component(s):**
-    *   `<exerp-odin-cc-form>`: The primary web component responsible for credit card detail capture.
+    *   `<exerp-odin-cc-form>`: The primary web component responsible for payment detail capture. It can render forms for both Credit Card and ACH (Bank Account) payments based on configuration.
 *   **Key Responsibilities:**
     *   Dynamically loading and initializing ODIN's `OdinPay.js` library.
-    *   Configuring and rendering the payment input fields (e.g., card number, expiry, CVC, postal code) using `OdinPay.createCardForm()`.
-    *   Handling callbacks from `OdinPay.js` upon form submission or error.
+    *   Configuring and rendering the payment input fields (e.g., card number, expiry, CVC, postal code for cards; or account number, routing/transit numbers, account type for ACH) using `OdinPay.createCardForm()` or `OdinPay.createBankAccountForm()`.
+    *   Handling callbacks from `OdinPay.js` upon form submission or error for both payment types.
     *   Emitting internal events (`odinSubmitInternal`, `odinErrorInternal`) to communicate results or errors to the facade.
     *   Managing its own CSS for basic structure and appearance (with `shadow: false`, allowing host styling).
 *   **Outputs:** Standard Web Components, consumed by the `@exerp/odin-dropin` facade package via its `dist-custom-elements` output.
@@ -52,9 +52,9 @@ The ODIN Drop-in workspace is a monorepo containing several key packages that wo
 *   **Key Responsibilities:**
     *   Exporting the primary `OdinDropin` class as the main entry point for integration.
     *   Managing the lifecycle of the core web component (`<exerp-odin-cc-form>`):
-        *   Receiving configuration from the host application (e.g., `odinPublicToken`, **`countryCode`**, `isSingleUse`, **`billingFieldsConfig`**, callbacks).
+        *   Receiving configuration from the host application (e.g., `odinPublicToken`, `countryCode`, **`paymentMethodType` ('CARD' or 'ACH')**, `isSingleUse`, `billingFieldsConfig`, callbacks).
         *   Creating an instance of the web component (`document.createElement('exerp-odin-cc-form')`).
-        *   Passing necessary properties (props) to the web component (**`odinPublicToken`**, **`countryCode`**, **`isSingleUse`**, **`billingFieldsConfig`**).
+        *   Passing necessary properties (props) to the web component.
         *   Attaching event listeners to the web component to capture `odinSubmitInternal` and `odinErrorInternal` events.
         *   Invoking the host application's `onSubmit` or `onError` callbacks with the processed results.
         *   Handling mounting (`mount()`) and unmounting (`unmount()`) of the web component in the host application's DOM.
@@ -85,26 +85,26 @@ The process of initializing and displaying the ODIN Drop-in component typically 
     *   The host application instantiates `new OdinDropin()`, providing:
         *   The `odinPublicToken`.
         *   The **mandatory** `countryCode` ('US' or 'CA').
+        *   An optional `paymentMethodType` (`'CARD'` or `'ACH'`, defaults to `'CARD'`).
         *   Optional `isSingleUse` flag.
         *   Optional **`billingFieldsConfig`** object (e.g., `{ name: true, addressLine1: { label: 'Street Address' } }`) to enable optional fields and customize labels/placeholders. Refer to the `BillingFieldsConfig` type for details. 
         *   Callback functions (`onSubmit`, `onError`).
         *   Optional general configuration (`config.theme` - currently deferred for full implementation).
 3.  **Facade Package (Mounting):**
     *   The host application calls the `odinDropinInstance.mount(selectorOrElement)` method.
-    *   The facade creates an instance of the `<exerp-odin-cc-form>` web component (`document.createElement('exerp-odin-cc-form')`).
+    *   The facade creates an instance of the `<exerp-odin-cc-form>` web component.
     *   It sets the `odinPublicToken`, **`countryCode`**, **`isSingleUse`**, and **`billingFieldsConfig`** properties on the web component instance.
     *   It attaches event listeners for `odinSubmitInternal` and `odinErrorInternal` events emitted by the web component.
     *   The web component is appended to the specified DOM mount point.
 4.  **Core Package (`@exerp/odin-dropin-core` - `<exerp-odin-cc-form>` component):**
-    *   Upon being added to the DOM and receiving props (especially `odinPublicToken`, `countryCode`), the component's `componentDidLoad` (or `watch` handlers) trigger.
-    *   It dynamically loads the external `OdinPay.js` script if not already loaded.
-    *   It initializes the `OdinPay` object using the `odinPublicToken`, **`countryCode`**, and a pre-defined theme structure (workaround for library bug).
-    *   It calls `odinPayInstance.createCardForm()`, providing selectors for the DOM elements within its template where `OdinPay.js` will inject the payment input iframes (Card Information, Postal Code, and **conditionally Name on Card or other enabled billing fields**). It also passes the `isSingleUse` flag and configurations for the **enabled billing fields** and the internal submit callback.
-4.  **Core Package (`@exerp/odin-dropin-core` - `<exerp-odin-cc-form>` component):**
     *   Upon being added to the DOM and receiving the `odinPublicToken` prop, the component's `componentDidLoad` (or `watch` on `odinPublicToken`) lifecycle method triggers.
     *   It dynamically loads the external `OdinPay.js` script if not already loaded.
     *   It initializes the `OdinPay` object using the `odinPublicToken` and a pre-defined (currently hardcoded) theme.
-    *   It calls `odinPayInstance.createCardForm()`, providing selectors for the DOM elements within its template where `OdinPay.js` will inject the payment input iframes (Card Information, Postal Code). It also passes the `isSingleUse` flag and a callback for the OdinPay-provided submit button.
+    *   Based on its `paymentMethodType` prop, it calls either:
+        *   `odinPayInstance.createCardForm()`, providing selectors for Card Information, Postal Code, and conditionally other enabled billing fields.
+        *   `odinPayInstance.createBankAccountForm()`, providing selectors for Account Holder Name, Account Number, Bank Account Type, country-specific bank numbers (Routing/Transit/Institution), and conditionally other enabled billing fields.
+    *   It also passes the `isSingleUse` flag (if applicable to the chosen form type) and configurations for enabled billing fields and the internal submit callback.
+
 5.  **`OdinPay.js`:**
     *   Renders the secure input fields (iframes) into the designated DOM elements within the `<exerp-odin-cc-form>` component.
 
@@ -121,12 +121,14 @@ When the user interacts with the form and initiates a submission:
 3.  **`OdinPay.js`:**
     *   Captures the payment details from its iframes.
     *   Communicates with ODIN servers to tokenize the payment information.
-    *   Invokes the callback function provided to `createCardForm`'s `submitButton.callback` option, passing a result object. If successful, `result.paymentMethod` contains the id and potentially a `billingInformation` object (with keys like `name`, `emailAddress`, and a nested address object: `{ addressLine1, city, postalCode, ... }`) if billing fields were configured and submitted
+    *   Invokes the callback function provided to `createCardForm`'s or `createBankAccountForm`'s `submitButton.callback` option, passing a result object.
+        *   **For Card:** If successful, `result.paymentMethod` contains the id, card details (`cardBrand`, `last4`, etc.), and potentially `billingInformation`.
+        *   **For ACH (Bank Account):** If successful, `result.paymentMethod` contains the id, `type: "BANK_ACCOUNT"`, ACH details (`bankAccountType`, `accountNumber` (masked/last4), `routingNumber` or `transitNumber`/`institutionNumber`, `country`), and potentially `billingInformation`.
 4.  **Core Package (`<exerp-odin-cc-form>` component - OdinPay Callback):**
     *   The callback function receives the `result` object from `OdinPay.js`.
     *   If `result.success === true` and `result.paymentMethod.id` is present:
-        *   It extracts the `paymentMethodId` and any `billingInformation` from `result.paymentMethod`.
-        *   It emits an `odinSubmitInternal` event with the payload `{ paymentMethodId, billingInformation? }`.
+        *   It extracts the `paymentMethodId`, `billingInformation` (if present), and payment method-specific details (card or ACH).
+        *   It emits an `odinSubmitInternal` event with a payload containing `paymentMethodId`, `paymentMethodType` (derived from `result.paymentMethod.type`), `billingInformation?`, and a `details` object specific to the payment method.
     *   If `result.success === false`:
         *   It parses the `result.message` (which can be a string, object, or array) to construct a structured error payload.
         *   It emits an `odinErrorInternal` event. The payload is an `OdinPayErrorPayload` object containing:
@@ -139,15 +141,17 @@ When the user interacts with the form and initiates a submission:
     *   The event listener for `odinSubmitInternal` (or `odinErrorInternal`) is triggered.
     *   It calls the corresponding `onSubmit` callback or `onError` callback provided by the host application during initialization.
     *   For `onSubmit`, the payload is an `OdinSubmitPayload` object containing:
-        *   `paymentMethodId` (`string`): The tokenized payment method identifier.
-        *   `paymentMethodType` (`'CARD'`): Indicates the type of payment method (Only `'CARD'` for now).
-        *   `billingInformation?` (`OdinPayBillingInformation`): Optional object with collected billing details (name, email, phone, address).
-        *   `details?` (`CardPaymentMethodDetails | ...`): Optional object with details specific to the `paymentMethodType`. For `'CARD'`, this includes:
-            *   `cardBrand?` (`string`)
-            *   `last4?` (`string`)
-            *   `maskedAccountNumber?` (`string`)
-            *   `expirationDate?` (`string`)
-            *   `binDetails?` (`any`)
+        *   `paymentMethodId` (`string`): ...
+        *   `paymentMethodType` (`'CARD' | 'BANK_ACCOUNT'`): Indicates the type of payment method.
+        *   `billingInformation?` (`OdinPayBillingInformation`): ...
+        *   `details?` (`CardPaymentMethodDetails | AchPaymentMethodDetails`): Optional object with details specific to the `paymentMethodType`. `paymentMethodType`. 
+            * For `'CARD'`, this includes:
+                *   `cardBrand?` (`string`)
+                *   `last4?` (`string`)
+                *   `maskedAccountNumber?` (`string`)
+                *   `expirationDate?` (`string`)
+                *   `binDetails?` (`any`)
+            *   For `'BANK_ACCOUNT'`, this includes: `bankAccountType?`, `accountNumberLast4?`, `routingNumber?` (US), `transitNumber?` (CA), `institutionNumber?` (CA), `country?`.
     *   For `onError`, the payload is the structured `OdinPayErrorPayload`.
 
 6.  **Host Application:**
@@ -188,7 +192,7 @@ The ODIN Drop-in component is designed to offer a balance between providing a co
 
 *   **No Shadow DOM:** The `<exerp-odin-cc-form>` web component is configured with `shadow: false`. This means that its internal styles are not encapsulated within a Shadow DOM boundary but are applied directly to the document.
 *   **Internal CSS:** The component has its own CSS file (`exerp-odin-cc-form.css`) that defines the basic layout, structure, and minimal appearance for elements it renders directly (e.g., container divs, labels, the visible submit button, error message containers).
-*   **`OdinPay.js` Input Field Styling:** The actual payment input fields (card number, expiry, CVC, postal code) are rendered by `OdinPay.js` as iframes.
+*   **`OdinPay.js` Input Field Styling:** The actual payment input fields (card number, expiry, CVC, postal code for cards; account number, routing/transit numbers for ACH) are rendered by `OdinPay.js` as iframes.
     *   The `<exerp-odin-cc-form>` component passes a basic, hardcoded theme object during the `OdinPay()` initialization. This theme object allows for some control over the appearance of the inputs within the iframes (e.g., font family, font size, invalid state color), as supported by `OdinPay.js`.
 
 ### 5.2. Host Application Styling Capabilities
@@ -223,14 +227,4 @@ The monorepo is set up to facilitate an efficient development and testing workfl
 
 ## 7. Future Development & Extensibility
 
-The ODIN Drop-in component has been designed with extensibility in mind to support a growing range of payment functionalities.
-
-*   **Planned Features:** Several enhancements and new features are planned beyond the initial MVP, including but not limited to:
-    *   Support for ACH (Bank Account) payments.
-    *   Enhanced theming capabilities.
-    *   Optional billing field configurations.
-    *   Management of payment agreements (Card-on-File / Recurring).
-*   **Architectural Support for Extensibility:**
-    *   New payment methods can be introduced by creating new Stencil web components within the `@exerp/odin-dropin-core` package, each handling the specific logic for that payment type (e.g., a new component for ACH that integrates with `OdinPay.createBankAccountForm()`).
-    *   The `@exerp/odin-dropin` facade can then be extended to expose new methods or configuration options for initializing and mounting these new components.
 *   **Detailed Backlog:** For a comprehensive list of planned features, enhancements, and their current status, please refer to the [Feature Backlog](../../planning/FEATURE_BACKLOG.md). This document will also serve as a starting point or link to more detailed design specifications for upcoming features as they are being developed.

@@ -9,7 +9,7 @@ import type {
   FieldCustomization as CoreFieldCustomization,
   CardPaymentMethodDetails as CoreCardPaymentMethodDetails,
   AchPaymentMethodDetails as CoreAchPaymentMethodDetails,
-  PaymentMethodSpecificDetails as CorePaymentMethodSpecificDetails 
+  PaymentMethodSpecificDetails as CorePaymentMethodSpecificDetails,
 } from "../../core/dist/types/components/exerp-odin-cc-form/exerp-odin-cc-form";
 
 import {
@@ -23,6 +23,7 @@ interface OdinDropinInitializationParams {
   odinPublicToken: string;
   countryCode: "US" | "CA";
   isSingleUse?: boolean;
+  paymentMethodType?: "CARD" | "ACH";
   /**
    * Optional configuration to enable and customize billing fields.
    * Fields can be enabled with `true` (using default label/placeholder)
@@ -95,8 +96,15 @@ export class OdinDropin {
       "exerp-odin-cc-form"
     ) as HTMLExerpOdinCcFormElement;
     if (this.odinCcFormComponent) {
+      this.odinCcFormComponent.paymentMethodType =
+        this.params.paymentMethodType ?? "CARD";
+      if (this.params.paymentMethodType) {
+        this.odinCcFormComponent.paymentMethodType =
+          this.params.paymentMethodType;
+      }
       log(this.currentLogLevel, "DEBUG", "[Facade] Setting component props:", {
-        tokenProvided: this.params.odinPublicToken,
+        tokenProvided: this.params.odinPublicToken, // Display the public token because I need to when debugging
+        paymentMethodType: this.odinCcFormComponent.paymentMethodType, // Log the payment method type
         countryCode: this.params.countryCode,
         isSingleUse: this.params.isSingleUse ?? true, // Log effective value
         logLevel: this.currentLogLevel, // Log the level being passed
@@ -123,8 +131,12 @@ export class OdinDropin {
         this.odinCcFormComponent.odinPublicToken,
         "Country:",
         this.odinCcFormComponent.countryCode,
+        "Payment Method Type:",
+        this.odinCcFormComponent.paymentMethodType,
         "Billing Config:",
-        JSON.stringify(this.odinCcFormComponent.billingFieldsConfig)
+        JSON.stringify(this.odinCcFormComponent.billingFieldsConfig),
+        "Payment Method Type:",
+        this.odinCcFormComponent.paymentMethodType
       );
 
       this.odinCcFormComponent.addEventListener(
@@ -142,7 +154,9 @@ export class OdinDropin {
         this.currentLogLevel,
         "INFO",
         "exerp-odin-cc-form mounted to",
-        mountPoint
+        mountPoint,
+        "with paymentMethodType:",
+        this.odinCcFormComponent.paymentMethodType
       );
     } else {
       log(
@@ -171,10 +185,15 @@ export class OdinDropin {
   };
 
   private handleOdinError = (event: CustomEvent<CoreOdinPayErrorPayload>) => {
-    log(this.currentLogLevel, 'ERROR', '[Facade] handleOdinError TRIGGERED.');
-   if (isLogLevelEnabled(this.currentLogLevel, 'WARN')) {
-      log(this.currentLogLevel, 'WARN', '[Facade] Error Event Detail:', event.detail);
-   }
+    log(this.currentLogLevel, "ERROR", "[Facade] handleOdinError TRIGGERED.");
+    if (isLogLevelEnabled(this.currentLogLevel, "WARN")) {
+      log(
+        this.currentLogLevel,
+        "WARN",
+        "[Facade] Error Event Detail:",
+        event.detail
+      );
+    }
     this.params.onError(event.detail); // Call the host app's callback
   };
 
@@ -198,7 +217,7 @@ export class OdinDropin {
         );
       }
       this.odinCcFormComponent = null;
-      log(this.currentLogLevel, 'INFO', 'exerp-odin-cc-form unmounted.');
+      log(this.currentLogLevel, "INFO", "exerp-odin-cc-form unmounted.");
     }
   }
 }
@@ -222,6 +241,5 @@ export type {
   CoreCardPaymentMethodDetails as CardPaymentMethodDetails,
   CoreAchPaymentMethodDetails as AchPaymentMethodDetails,
   CorePaymentMethodSpecificDetails as PaymentMethodSpecificDetails,
-  LogLevel
+  LogLevel,
 };
-

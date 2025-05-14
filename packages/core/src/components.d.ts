@@ -31,6 +31,11 @@ export namespace Components {
           * The short-lived public token obtained from the ODIN backend, required to initialize the OdinPay.js library. Passed down from the facade.
          */
         "odinPublicToken"?: string;
+        /**
+          * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'ACH' will render the bank account (ACH) form.
+          * @defaultValue 'CARD'
+         */
+        "paymentMethodType": 'CARD' | 'ACH';
     }
 }
 export interface ExerpOdinCcFormCustomEvent<T> extends CustomEvent<T> {
@@ -92,6 +97,11 @@ declare namespace LocalJSX {
           * Fired when OdinPay.js successfully returns a payment method token after the user submits the form. The event detail contains the `paymentMethodId` and, if applicable, the `billingInformation` collected from the form.
          */
         "onOdinSubmitInternal"?: (event: ExerpOdinCcFormCustomEvent<OdinPaySubmitPayload>) => void;
+        /**
+          * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'ACH' will render the bank account (ACH) form.
+          * @defaultValue 'CARD'
+         */
+        "paymentMethodType"?: 'CARD' | 'ACH';
     }
     interface IntrinsicElements {
         "exerp-odin-cc-form": ExerpOdinCcForm;

@@ -76,15 +76,20 @@ This document lists planned features and enhancements beyond the initial MVP sco
     *   **Details:** As more options (country code, billing fields toggles, isSingleUse toggle, etc.) are added, the current single-column layout might become cluttered. Refactor needed for better usability during development and testing. Could involve grouping related options.
     *   **Status:** Implemented.
 
-## 👉 ACH Support
+## ✅ ACH Support 
 
-*   **Requirement:** Implement support for capturing Bank Account (ACH) details.
-*   **Details:**
-    *   Add a method like `createBankAccountForm` to the facade and core component.
-    *   Handle country-specific fields (US vs. CA).
-    *   Expose `country` configuration via the facade.
-    *   Implement necessary UI and `OdinPay.createBankAccountForm()` integration.
-*   **Status:** Pending design/implementation.
+*   ✅ **Implement ACH Support**
+    *   **Requirement:** Implement support for capturing Bank Account (ACH) details.
+    *   **Details:**
+        *   Extended core component (`exerp-odin-cc-form`) and facade (`OdinDropin`) to handle `paymentMethodType: 'ACH'`.
+        *   Core component now calls `OdinPay.createBankAccountForm()` with appropriate field configurations based on `countryCode` (US vs. CA for routing/transit/institution numbers).
+        *   Supported fields: Account Holder Name, Account Number, Bank Account Type (Checking/Savings via OdinPay.js-generated `<select>`).
+        *   Optional billing fields are also supported alongside ACH details.
+        *   `OdinSubmitPayload` in `onSubmit` callback now includes `paymentMethodType: 'BANK_ACCOUNT'` and `AchPaymentMethodDetails` (account type, last4, bank numbers, country).
+        *   Error handling and field customization (labels/placeholders) extended for ACH fields.
+    *   **Status:** Implemented.
+    *   **Follow-up/Notes:**
+        *   `isSingleUse` flag usage for ACH tokens via `createBankAccountForm` is unconfirmed by OdinPay.js documentation/behavior; currently omitted from the call. Monitor if this impacts token usability.
 
 ## 👉 Testing Strategy & Implementation
 

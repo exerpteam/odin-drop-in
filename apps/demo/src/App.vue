@@ -22,6 +22,7 @@ const availableLogLevels: LogLevel[] = [
 // --- State ---
 const odinPublicToken = ref("");
 const countryCode = ref<"US" | "CA">("US");
+const paymentMethodType = ref<"CARD" | "ACH">("CARD");
 const isSingleUse = ref<boolean>(true);
 const selectedLogLevel = ref<LogLevel>("WARN");
 const dropinContainerRef = ref<HTMLElement | null>(null);
@@ -171,7 +172,7 @@ async function initializeAndMountDropin() {
 
   try {
     console.log(
-      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, isSingleUse: ${isSingleUse.value}`
+      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, paymentMethodType: ${paymentMethodType.value}, isSingleUse: ${isSingleUse.value}`
     );
     // Actual Drop-in Initialization Logic
     odinDropinInstance = new OdinDropin({
@@ -180,11 +181,22 @@ async function initializeAndMountDropin() {
       isSingleUse: isSingleUse.value,
       billingFieldsConfig: currentBillingFieldsConfig.value,
       logLevel: selectedLogLevel.value,
+      paymentMethodType: paymentMethodType.value,
       onSubmit: (result) => {
         console.log("[Demo App] onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
         paymentResult.value = result;
         displayedError.value = null;
+
+        console.log(
+          "[Demo App] onSubmit paymentMethodType from result:",
+          result.paymentMethodType
+        );
+        if (result.paymentMethodType === "BANK_ACCOUNT" && result.details) {
+          // ⚠️ Note: Report says 'BANK_ACCOUNT', our type says 'ACH'. We need to align this. For now, let's assume our types are what we expect from the facade.
+          const achDetails = result.details; // Will be AchPaymentMethodDetails
+          console.log("[Demo App] ACH Details:", achDetails);
+        }
       },
       onError: (error) => {
         console.error("[Demo App] onError:", error);
@@ -244,6 +256,25 @@ onMounted(() => {
             <option value="US">US - United States</option>
             <option value="CA">CA - Canada</option>
           </select>
+        </div>
+        <div>
+          <label>Payment Method:</label>
+          <div class="radio-group-pmt">
+            <input
+              type="radio"
+              id="pmtCard"
+              value="CARD"
+              v-model="paymentMethodType"
+            />
+            <label for="pmtCard">Card</label>
+            <input
+              type="radio"
+              id="pmtAch"
+              value="ACH"
+              v-model="paymentMethodType"
+            />
+            <label for="pmtAch">ACH (Bank)</label>
+          </div>
         </div>
         <div class="checkbox-group">
           <input id="isSingleUse" type="checkbox" v-model="isSingleUse" />
@@ -414,10 +445,7 @@ onMounted(() => {
               <strong>Billing Information Received:</strong>
               <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.billingInformation, null, 2) }}</code></pre>
             </div>
-            <div
-              v-else
-              class="billing-details-subsection"
-            >
+            <div v-else class="billing-details-subsection">
               <p><em>No billing information returned in result.</em></p>
             </div>
           </div>
@@ -713,6 +741,19 @@ h1 {
 .display-column .dropin-section,
 .display-column .results-section {
   margin-bottom: 0; /* Remove bottom margin as gap handles spacing */
+}
+
+.radio-group-pmt {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between radio options */
+}
+.radio-group-pmt input[type="radio"] {
+  margin-right: 5px;
+}
+.radio-group-pmt label {
+  margin-bottom: 0; /* Override default label block margin */
+  font-weight: normal;
 }
 
 .display-column .results-section {
