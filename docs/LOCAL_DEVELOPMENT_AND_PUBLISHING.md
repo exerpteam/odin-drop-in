@@ -219,8 +219,6 @@ pnpm publish --filter @exerp/odin-dropin
 ```
 This command tells pnpm to publish the package located by the filter. Pnpm will use the version from `packages/odin-dropin/package.json`.
 
-If you added `publishConfig: { "access": "public" }` to `packages/odin-dropin/package.json`, it will be published as a public package. Otherwise, scoped packages default to restricted/private (which typically requires a paid npm organization plan).
-
 ### Post-Publishing Steps
 
 1.  **Push Git Commits and Tags:**
