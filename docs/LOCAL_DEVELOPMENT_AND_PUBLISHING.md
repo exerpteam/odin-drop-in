@@ -166,10 +166,72 @@ You can also test changes more directly within the `odin-dropin-workspace`:
 
 ## Publishing / Deployment
 
-**(TODO)**
+This section outlines the steps to publish the `@exerp/odin-dropin` package to the npm registry under the `@exerp` scope. Our repository is hosted at `https://github.com/exerpteam/odin-drop-in`.
 
-This section will cover:
-- Publishing the `@exerp/odin-dropin` package to a private npm registry.
-- Versioning strategies.
-- How other developers can install and use the published package in their projects.
-- CI/CD pipeline considerations for automated building and publishing.
+### Prerequisites
+
+1.  **npm Account:** You must have an npm account.
+2.  **Organization Membership & Permissions:** You need to be a member of the `@exerp` organization on npmjs.com and have permissions to publish packages to that scope.
+3.  **Logged into npm:** You must be logged into npm via the CLI. If not, run:
+    ```bash
+    pnpm login
+    ```
+    Follow the prompts. This will authenticate you with the default npm registry (`https://registry.npmjs.org/`).
+
+### Versioning the Package
+
+Before publishing a new version, it's crucial to update the `version` field in `packages/odin-dropin/package.json` according to [Semantic Versioning (SemVer)](https://semver.org/).
+
+You can update the version manually, or use pnpm's version command from the workspace root:
+
+```bash
+# Examples:
+# pnpm --filter @exerp/odin-dropin version patch
+# pnpm --filter @exerp/odin-dropin version minor
+# pnpm --filter @exerp/odin-dropin version major
+# pnpm --filter @exerp/odin-dropin version <specific_version>
+
+# This command will:
+# 1. Update the version in `packages/odin-dropin/package.json`.
+# 2. Create a Git commit for the version change.
+# 3. Create a Git tag for the version.
+# Ensure you have no uncommitted changes before running this.
+```
+Alternatively, manually edit `packages/odin-dropin/package.json`, then commit and tag yourself.
+
+### Building the Package
+
+Ensure the package has been built with the latest changes:
+
+```bash
+# Run from the workspace root
+pnpm turbo build --filter @exerp/odin-dropin
+```
+This command will build only the `@exerp/odin-dropin` package and its dependencies (like `@exerp/odin-dropin-core` if it changed).
+
+### Publishing to npm
+
+Once versioned and built, you can publish the package:
+
+```bash
+# Run from the workspace root
+pnpm publish --filter @exerp/odin-dropin
+```
+This command tells pnpm to publish the package located by the filter. Pnpm will use the version from `packages/odin-dropin/package.json`.
+
+If you added `publishConfig: { "access": "public" }` to `packages/odin-dropin/package.json`, it will be published as a public package. Otherwise, scoped packages default to restricted/private (which typically requires a paid npm organization plan).
+
+### Post-Publishing Steps
+
+1.  **Push Git Commits and Tags:**
+    If you used `pnpm version` or manually created commits/tags, push them to the remote repository:
+    ```bash
+    git push
+    git push --tags
+    ```
+
+2.  **Create a Release on GitHub (Recommended):**
+    Navigate to `https://github.com/exerpteam/odin-drop-in/releases` and create a new release corresponding to the Git tag. Include release notes detailing the changes.
+
+3.  **Verify on npmjs.com:**
+    Check the package page on npm (e.g., `https://www.npmjs.com/package/@exerp/odin-dropin`) to ensure the new version is listed correctly.

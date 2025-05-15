@@ -1,6 +1,12 @@
+<p align="left">
+  <a href="../../README.md">↩️ Workspace README</a>
+</p>
+
+---
 # ODIN Payment Drop-in Facade (`@exerp/odin-dropin`)
 
 This package provides the public facade for integrating the ODIN Payment Drop-in component into web applications. It simplifies the interaction with the underlying Stencil web components and the `OdinPay.js` library.
+
 
 ## Installation
 
@@ -44,7 +50,7 @@ Initializes a new instance of the ODIN Drop-in controller.
         *   `'ACH'`: Renders the ACH (bank account) payment form.
     *   `isSingleUse` (`boolean`, *Optional*, Default: `true`): Controls how the generated payment method token should be treated.
         *   `true`: Intended for a one-time payment.
-        *   `false`: Intended for saving the payment method (e.g., for future Card-on-File or recurring payments).
+        *   `false`: Intended for saving the payment method.
     *   `billingFieldsConfig?` (`BillingFieldsConfig`, *Optional*): An object to configure the visibility and customize the appearance of billing address fields and other standard fields.
         *   **Usage for Credit Card:**
             *   For optional fields (e.g., `name`, `addressLine1`, `city`, `state`, `country`, `emailAddress`, `phoneNumber`):
@@ -89,17 +95,17 @@ Initializes a new instance of the ODIN Drop-in controller.
             *   `billingInformation?` (`OdinPayBillingInformation`, *Optional*): An object containing the billing details entered by the user, if any billing fields were configured and submitted. Its structure is:
                 ```typescript
                 interface OdinPayBillingInformation {
-                name?: string;
-                emailAddress?: string;
-                phoneNumber?: string;
-                address?: {
-                    addressLine1?: string;
-                    addressLine2?: string;
-                    city?: string;
-                    state?: string;
-                    postalCode?: string;
-                    country?: string;
-                };
+                    name?: string;
+                    emailAddress?: string;
+                    phoneNumber?: string;
+                    address?: {
+                        addressLine1?: string;
+                        addressLine2?: string;
+                        city?: string;
+                        state?: string;
+                        postalCode?: string;
+                        country?: string;
+                    };
                 }
                 ```
                 Keys will be present if the corresponding field was configured. An empty string value means the field was configured but left blank by the user. If a field was not configured, its key will be omitted. The `address` object itself will be omitted if no address fields were configured.
@@ -107,11 +113,11 @@ Initializes a new instance of the ODIN Drop-in controller.
                 *   If `paymentMethodType` is `'CARD'`, this will be a `CardPaymentMethodDetails` object:
                     ```typescript
                     interface CardPaymentMethodDetails {
-                    cardBrand?: string;       // e.g., "VISA", "MASTERCARD"
-                    last4?: string;           // Last four digits of the card number
-                    maskedAccountNumber?: string; // The masked card number (e.g., "************1111")
-                    expirationDate?: string;  // e.g., "12/2025"
-                    binDetails?: any;         // Object containing BIN (Bank Identification Number) details
+                        cardBrand?: string;       // e.g., "VISA", "MASTERCARD"
+                        last4?: string;           // Last four digits of the card number
+                        maskedAccountNumber?: string; // The masked card number (e.g., "************1111")
+                        expirationDate?: string;  // e.g., "12/2025"
+                        binDetails?: any;         // Object containing BIN (Bank Identification Number) details
                     }
                     ```
                 *   If `paymentMethodType` is `'BANK_ACCOUNT'`, this will be an `AchPaymentMethodDetails` object:

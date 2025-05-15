@@ -111,7 +111,7 @@ For more detailed development commands (like isolated component testing), see [Q
 
 If you need to test the `@exerp/odin-dropin` package within another local project (e.g., `webapp-standard`) before publishing, you can use `pnpm add /path/to/local/package` to link it.
 
-For detailed instructions on this workflow, please see [LOCAL_DEVELOPMENT_SETUP.md](LOCAL_DEVELOPMENT_SETUP.md).
+For detailed instructions on this workflow, please see [LOCAL_DEVELOPMENT_AND_PUBLISHING.md](./docs/LOCAL_DEVELOPMENT_AND_PUBLISHING.md).
 
 ## License
 

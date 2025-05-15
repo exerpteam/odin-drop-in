@@ -218,4 +218,4 @@ The monorepo is set up to facilitate an efficient development and testing workfl
     *   For testing in a real-world host application during development (e.g., `webapp-standard`), the `@exerp/odin-dropin` package can be linked locally using `pnpm add /path/to/local/package`.
 *   **Detailed Commands and Setup:**
     *   For essential development commands, refer to the [Quick Start Guide](../../QUICK_START.md).
-    *   For instructions on linking and testing with an external local project, see the [Local Development Setup Guide](../../LOCAL_DEVELOPMENT_SETUP.md).
+    *   For instructions on linking and testing with an external local project, see the [Local Development Setup Guide](../../docs/LOCAL_DEVELOPMENT_AND_PUBLISHING.md).

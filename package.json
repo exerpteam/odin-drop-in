@@ -2,6 +2,7 @@
   "name": "odin-dropin-workspace",
   "private": true,
   "license": "MIT",
+  "description": "Monorepo for the ODIN Payment Drop-in component and related packages.",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev"

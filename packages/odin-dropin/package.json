@@ -15,6 +15,18 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exerpteam/odin-drop-in.git",
+    "directory": "packages/odin-dropin"
+  },
+  "bugs": {
+    "url": "https://github.com/exerpteam/odin-drop-in/issues"
+  },
+  "homepage": "https://github.com/exerpteam/odin-drop-in/tree/main/packages/odin-dropin#readme",
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",

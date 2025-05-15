@@ -1,7 +1,8 @@
 {
   "name": "@exerp/odin-dropin-core",
+  "private": true,
   "version": "0.0.1",
-  "description": "Stencil Component Starter",
+  "description": "Internal core Web Components (Stencil.js) for the ODIN Payment Drop-in.",
   "main": "dist/index.cjs.js",
   "module": "dist/index.js",
   "types": "dist/types/index.d.ts",
@@ -25,7 +26,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/stenciljs/component-starter.git"
+    "url": "git+https://github.com/exerpteam/odin-drop-in.git",
+    "directory": "packages/core"
   },
   "files": [
     "dist/",
