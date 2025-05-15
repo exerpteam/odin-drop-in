@@ -52,6 +52,10 @@ To integrate the ODIN Drop-in into your application:
 
 The demo app is a simple Vue 3 application that showcases the usage of the `@exerp/odin-dropin` package. It provides an interactive environment for testing and demonstrating the component.
 
+<p align="center">
+  <img src="./docs/assets/images/dropin-demo.png" alt="ODIN Drop-in Demo App Interface" width="600">
+</p>
+
 Please refer to the [demo app README](apps/demo/README.md) for instructions on how to run it locally.
 
 

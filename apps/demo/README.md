@@ -9,6 +9,10 @@ This application (`@exerp/odin-dropin-demo`) serves as a local development and t
 *   Facilitates interactive testing of the component's functionality (e.g., submitting card details, handling success/error callbacks).
 *   Uses the local `@exerp/odin-dropin` package via pnpm workspaces, ensuring that changes made to the library packages are reflected here after rebuilding.
 
+<p align="center">
+  <img src="../../docs/assets/images/dropin-demo.png" alt="ODIN Drop-in Demo App Interface" width="600">
+</p>
+
 ## Running the Demo
 
 To run this demo application:

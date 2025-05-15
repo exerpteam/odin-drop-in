@@ -7,7 +7,18 @@
 
 This package provides the public facade for integrating the ODIN Payment Drop-in component into web applications. It simplifies the interaction with the underlying Stencil web components and the `OdinPay.js` library.
 
-
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <strong>Example: Card Payment Form</strong><br>
+      <img src="../../docs/assets/images/dropin-card-example-fields.png" alt="ODIN Drop-in Card Example" width="350">
+    </td>
+    <td align="center" valign="top">
+      <strong>Example: ACH Payment Form</strong><br>
+      <img src="../../docs/assets/images/dropin-ach-example-fields.png" alt="ODIN Drop-in ACH Example" width="350">
+    </td>
+  </tr>
+</table>
 ## Installation
 
 ```bash
