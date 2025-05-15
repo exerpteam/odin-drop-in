@@ -6,7 +6,7 @@
 
 This repository contains the source code for the ODIN Payment Drop-in, a reusable JavaScript component library designed to securely capture payment details within web applications. It acts as a wrapper around ODIN's official `OdinPay.js` library, providing a simplified interface for integration.
 
-**Purpose:** To allow host applications (like Exerp's customer-facing web apps or partner integrations) to embed a UI component that handles the collection of sensitive payment information (Credit Card initially, ACH planned) directly from the user in a secure manner, tokenizing the details via ODIN for subsequent backend processing.
+**Purpose:** To allow host applications (like Exerp's customer-facing web apps or partner integrations) to embed a UI component that handles the collection of sensitive payment information (Credit Card and ACH/Bank Account) directly from the user in a secure manner, tokenizing the details via ODIN for subsequent backend processing.
 
 ## Basic Usage (for Host Applications)
 
