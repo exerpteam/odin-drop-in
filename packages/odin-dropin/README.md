@@ -19,6 +19,7 @@ This package provides the public facade for integrating the ODIN Payment Drop-in
     </td>
   </tr>
 </table>
+
 ## Installation
 
 ```bash

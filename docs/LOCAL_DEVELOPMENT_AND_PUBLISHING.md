@@ -180,9 +180,11 @@ This section outlines the steps to publish the `@exerp/odin-dropin` package to t
 
 ### Versioning the Package
 
-Before publishing a new version, it's crucial to update the `version` field in `packages/odin-dropin/package.json` according to [Semantic Versioning (SemVer)](https://semver.org/).
+Before publishing a new version, it's crucial to update the `version` field in `packages/odin-dropin/package.json` according to [Semantic Versioning (SemVer)](https://semver.org/) and to tag this version in Git.
 
-You can update the version manually, or use pnpm's version command from the workspace root:
+**Recommended Approach (using pnpm):**
+
+Ideally, pnpm's version command can handle this. Run from the workspace root:
 
 ```bash
 # Examples:
@@ -191,13 +193,46 @@ You can update the version manually, or use pnpm's version command from the work
 # pnpm --filter @exerp/odin-dropin version major
 # pnpm --filter @exerp/odin-dropin version <specific_version>
 
-# This command will:
+# This command *should* ideally:
 # 1. Update the version in `packages/odin-dropin/package.json`.
 # 2. Create a Git commit for the version change.
 # 3. Create a Git tag for the version.
 # Ensure you have no uncommitted changes before running this.
 ```
-Alternatively, manually edit `packages/odin-dropin/package.json`, then commit and tag yourself.
+⚠️ **Note:** *In some environments or pnpm versions, this command might update the `package.json` but not automatically create the Git commit and tag. Always verify the outcome.*
+
+**Manual Fallback (Reliable Method):**
+
+If the `pnpm version` command doesn't create the Git commit and tag, or if you prefer manual control, follow these steps:
+
+1.  **Manually Edit `packages/odin-dropin/package.json`:**
+    *   Open the file and update the `version` field to the new desired version (e.g., `1.0.1`).
+
+2.  **Commit the Version Change:**
+    ```bash
+    # Stage the package.json change
+    git add packages/odin-dropin/package.json
+    # Commit with a descriptive message
+    git commit -m "release: @exerp/odin-dropin v1.0.1" 
+    # (Adjust version and message as needed)
+    ```
+
+3.  **Tag the Commit:**
+    Create a Git tag for the new version. It's good practice to use a format like `v<version>` or `<packagename>@v<version>`.
+    ```bash
+    # Example:
+    git tag v1.0.1 
+    # (Ensure this matches the version in package.json)
+    ```
+
+4.  **Push Commits and Tags:**
+    After committing and tagging, push them to the remote repository:
+    ```bash
+    git push
+    git push --tags # Or push the specific tag: git push origin v1.0.1
+    ```
+
+Always ensure your `package.json` version, Git commit, and Git tag are consistent before proceeding to build and publish.
 
 ### Building the Package
 

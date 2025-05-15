@@ -54,7 +54,14 @@ The demo app will hot-reload as you make changes to the `@exerp/odin-dropin` fac
 
 ## 5. Testing
 
-*(Instructions to be added once tests are configured)*
+Automated tests (unit, integration, e2e) for the ODIN Drop-in components and facade are planned for a future iteration.
+
+Currently, testing relies on:
+-   Isolated core component testing using the Stencil development server (see Section 3).
+-   Interactive testing of the full drop-in functionality using the Demo Application (see Section 4).
+-   Local linking and testing within an external host project (see [LOCAL_DEVELOPMENT_AND_PUBLISHING.md](./docs/LOCAL_DEVELOPMENT_AND_PUBLISHING.md)).
+
+*(Detailed instructions for running automated tests will be added here once they are configured.)*
 
 ## 6. Cleaning Build Artifacts
 
