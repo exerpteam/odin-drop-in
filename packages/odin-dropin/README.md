@@ -1,6 +1,6 @@
-# Exerp ODIN Payment Drop-in Facade (`@exerp/odin-dropin`)
+# ODIN Payment Drop-in Facade (`@exerp/odin-dropin`)
 
-This package provides the public facade for integrating the Exerp ODIN Payment Drop-in component into web applications. It simplifies the interaction with the underlying Stencil web components and the `OdinPay.js` library.
+This package provides the public facade for integrating the ODIN Payment Drop-in component into web applications. It simplifies the interaction with the underlying Stencil web components and the `OdinPay.js` library.
 
 ## Installation
 

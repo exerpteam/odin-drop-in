@@ -488,7 +488,6 @@ The ODIN Drop-in component now requires a `countryCode` ('US' or 'CA') to be spe
     -   The selected `countryCode` is passed during `OdinDropin` initialization.
 -   **Documentation:**
     -   Updated `packages/core/.../readme.md` (auto-updated by Stencil) and `packages/odin-dropin/README.md` to reflect the new mandatory `countryCode` parameter.
-    -   Updated `FEATURE_BACKLOG.md`.
 
 ### Current Status:
 -   `countryCode` is successfully passed through all layers.
@@ -518,7 +517,6 @@ The ODIN Drop-in component now supports an optional "Name on Card" billing field
     *   A computed property `currentBillingFieldsConfig` creates the config object `{ name: enableNameField.value }` and passes it to `OdinDropin`.
 -   **Documentation:**
     -   Updated `packages/core/.../readme.md` (auto-updated by Stencil) and `packages/odin-dropin/README.md` for the new `billingFieldsConfig` parameter.
-    -   Updated `FEATURE_BACKLOG.md`.
 
 ### Current Status:
 -   The "Name on Card" field can be dynamically shown or hidden in the demo app.

@@ -169,7 +169,7 @@ You can also test changes more directly within the `odin-dropin-workspace`:
 **(TODO)**
 
 This section will cover:
-- Publishing the `@exerp/odin-dropin` package to a private npm registry (like GitHub Packages or Nexus).
+- Publishing the `@exerp/odin-dropin` package to a private npm registry.
 - Versioning strategies.
 - How other developers can install and use the published package in their projects.
 - CI/CD pipeline considerations for automated building and publishing.

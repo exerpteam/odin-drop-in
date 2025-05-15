@@ -1,10 +1,10 @@
-# Exerp ODIN Payment Drop-in Component
+# ODIN Payment Drop-in Component
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overview
 
-This repository contains the source code for the Exerp ODIN Payment Drop-in, a reusable JavaScript component library designed to securely capture payment details within web applications. It acts as a wrapper around ODIN's official `OdinPay.js` library, providing a simplified interface for integration.
+This repository contains the source code for the ODIN Payment Drop-in, a reusable JavaScript component library designed to securely capture payment details within web applications. It acts as a wrapper around ODIN's official `OdinPay.js` library, providing a simplified interface for integration.
 
 **Purpose:** To allow host applications (like Exerp's customer-facing web apps or partner integrations) to embed a UI component that handles the collection of sensitive payment information (Credit Card initially, ACH planned) directly from the user in a secure manner, tokenizing the details via ODIN for subsequent backend processing.
 
@@ -47,6 +47,12 @@ To integrate the ODIN Drop-in into your application:
     ```
 
 > **For detailed API documentation, advanced configuration, and complete usage examples, please see the [`@exerp/odin-dropin` package README](packages/odin-dropin/README.md).**
+
+## Running the Demo App
+
+The demo app is a simple Vue 3 application that showcases the usage of the `@exerp/odin-dropin` package. It provides an interactive environment for testing and demonstrating the component.
+
+Please refer to the [demo app README](apps/demo/README.md) for instructions on how to run it locally.
 
 
 ## Packages in this Monorepo

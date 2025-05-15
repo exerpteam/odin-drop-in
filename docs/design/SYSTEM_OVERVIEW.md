@@ -2,11 +2,11 @@
 
 ## 1. Introduction
 
-The Exerp ODIN Payment Drop-in is a reusable JavaScript component library designed to simplify the secure capture of payment details within host web applications. Its primary goal is to provide a streamlined and secure way for integrators to embed ODIN Payments functionality, abstracting the direct complexities of ODIN's `OdinPay.js` library.
+The ODIN Payment Drop-in is a reusable JavaScript component library designed to simplify the secure capture of payment details within host web applications. Its primary goal is to provide a streamlined and secure way for integrators to embed ODIN Payments functionality, abstracting the direct complexities of ODIN's `OdinPay.js` library.
 
 This component allows Exerp's customers and partners to embed a UI that handles the collection of sensitive payment information (initially Credit Card details) directly from the user, tokenizing these details via ODIN for subsequent backend processing.
 
-This document provides a high-level overview of the current system architecture, its main components, and key design principles. For details on the initial Minimum Viable Product (MVP) specification, refer to the [MVP Design Document](./DESIGN_DOC_MVP.md).
+This document provides a high-level overview of the current system architecture, its main components, and key design principles.
 
 ## 2. Core Architectural Principles
 
@@ -201,11 +201,6 @@ The ODIN Drop-in component is designed to offer a balance between providing a co
 *   **Submit Button:** A key example is the submit button. While the core component provides a functional button, the host application is expected to apply its own styling to ensure visual consistency (as demonstrated in the `apps/demo` Vue application).
 *   **Layout and Sizing:** The host application controls the overall size and positioning of the drop-in component by styling the container element into which it is mounted.
 
-### 5.3. Future Theming Enhancements (Deferred)
-
-*   **Theme Object Pass-through:** As noted in the [MVP Design Document](./DESIGN_DOC_MVP.md) and the [Feature Backlog](../../planning/FEATURE_BACKLOG.md), a future enhancement involves allowing the host application to pass a simplified theme object through the facade's `config.theme` option.
-*   **Translation to `OdinPay.js` Theme:** The core component would then be responsible for translating this simplified theme object into the more detailed, nested theme structure expected by `OdinPay.js`, allowing for more dynamic customization of the iframe-rendered input fields by the host application.
-
 ## 6. Development & Testing Workflow Overview
 
 The monorepo is set up to facilitate an efficient development and testing workflow for the ODIN Drop-in component library.
@@ -224,7 +219,3 @@ The monorepo is set up to facilitate an efficient development and testing workfl
 *   **Detailed Commands and Setup:**
     *   For essential development commands, refer to the [Quick Start Guide](../../QUICK_START.md).
     *   For instructions on linking and testing with an external local project, see the [Local Development Setup Guide](../../LOCAL_DEVELOPMENT_SETUP.md).
-
-## 7. Future Development & Extensibility
-
-*   **Detailed Backlog:** For a comprehensive list of planned features, enhancements, and their current status, please refer to the [Feature Backlog](../../planning/FEATURE_BACKLOG.md). This document will also serve as a starting point or link to more detailed design specifications for upcoming features as they are being developed.
