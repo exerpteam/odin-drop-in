@@ -336,7 +336,7 @@ export class ExerpOdinCcForm {
       return;
     }
     try {
-      await this.loadScript('https://js.odinpay.net/1.0.6/index.js', 'odin-pay-sdk');
+      await this.loadScript('https://js.odin-dev.com', 'odin-pay-sdk'); // TODO: Update to production v2 URL (e.g., https://js.odinpay.net or specific v2.x.x) when live
       this.scriptLoaded = true;
       this.log('INFO', 'OdinPay.js script loaded.');
     } catch (error) {
