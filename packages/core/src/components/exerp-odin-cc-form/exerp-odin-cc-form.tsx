@@ -336,7 +336,7 @@ export class ExerpOdinCcForm {
       return;
     }
     try {
-      await this.loadScript('https://js.odinpay.net', 'odin-pay-sdk');
+      await this.loadScript('https://js.odinpay.net/1.0.6/index.js', 'odin-pay-sdk');
       this.scriptLoaded = true;
       this.log('INFO', 'OdinPay.js script loaded.');
     } catch (error) {
