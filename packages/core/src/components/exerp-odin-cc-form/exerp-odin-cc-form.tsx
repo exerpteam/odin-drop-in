@@ -877,8 +877,8 @@ export class ExerpOdinCcForm {
   };
 
   private _parseOdinPayError(odinResult: any): OdinPayErrorPayload {
-    let code = 'ODIN_CALLBACK_ERROR'; // Default code
-    let generalMessage = 'An error occurred during payment processing.';
+    let code = 'UNKNOWN_ERROR';
+    let generalMessage = 'An unknown error occurred during payment processing.';
     const fieldErrors: OdinPayFieldError[] = [];
     let httpStatusCode: number | undefined;
 
@@ -931,7 +931,7 @@ export class ExerpOdinCcForm {
           code = httpStatusCode >= 500 ? 'API_SERVER_ERROR' : 'API_CLIENT_ERROR';
           if (httpStatusCode === 401) code = 'API_AUTH_ERROR';
         } else {
-          code = 'GENERAL_PAYMENT_ERROR'; // Or ODIN_CALLBACK_ERROR if more appropriate
+          code = 'ODIN_CALLBACK_ERROR';
         }
       } else if (Array.isArray(odinResult.message)) {
         generalMessage = 'Validation errors occurred.'; // More generic
@@ -955,6 +955,10 @@ export class ExerpOdinCcForm {
           generalMessage = fieldErrors[0].message; // If it's an object with numeric keys like "0"
         }
       }
+    } else if (odinResult && odinResult.success === false) {
+      this.log('WARN', '[Core] OdinPay callback indicated failure (success:false) but provided no `errors` array or `message` string.');
+      code = 'UNEXPECTED_CALLBACK_STRUCTURE';
+      generalMessage = 'Payment failed due to an unspecified error from the payment gateway.';
     }
 
     const payload: OdinPayErrorPayload = {
