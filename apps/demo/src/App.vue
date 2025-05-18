@@ -212,6 +212,9 @@ async function initializeAndMountDropin() {
 
   // Unmount previous instance if exists
   if (odinDropinInstance) {
+    console.log(
+      "[Demo App] Unmounting existing Drop-in instance before re-initializing..."
+    );
     odinDropinInstance.unmount();
     odinDropinInstance = null;
   }
@@ -268,6 +271,23 @@ async function initializeAndMountDropin() {
       code: "DEMO_INIT_EXCEPTION",
       message: `Failed to initialize Drop-in instance: ${error.message || error}`,
     };
+  }
+}
+
+function unmountDropin() {
+  if (odinDropinInstance) {
+    console.log("[Demo App] Unmounting Drop-in instance...");
+    odinDropinInstance.unmount();
+    // We might want to nullify the instance, but our re-init logic already handles it
+    // odinDropinInstance = null;
+    // Optionally clear results:
+    paymentMethodId.value = null;
+    paymentResult.value = null;
+    displayedError.value = null;
+    lastValidationEvent.value = null;
+    console.log("[Demo App] Drop-in unmounted by explicit call.");
+  } else {
+    console.log("[Demo App] No Drop-in instance to unmount.");
   }
 }
 
@@ -359,6 +379,26 @@ onMounted(() => {
           >
         </div>
       </div>
+
+      <div
+        class="global-actions-row"
+        style="
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        "
+      >
+        <button
+          @click="initializeAndMountDropin"
+          class="action-button init-button"
+        >
+          Initialize & Mount Drop-in
+        </button>
+        <button @click="unmountDropin" class="action-button unmount-button">
+          Unmount Drop-in
+        </button>
+      </div>
     </div>
     <!-- END: Global Configuration Section -->
 
@@ -442,10 +482,6 @@ onMounted(() => {
               </div>
             </div>
           </template>
-
-          <button @click="initializeAndMountDropin" style="margin-top: 20px">
-            Initialize & Mount Drop-in
-          </button>
         </div>
         <!-- End of .config-section -->
       </div>
@@ -541,7 +577,6 @@ onMounted(() => {
                   <code>{{ paymentResult.details.country }}</code>
                 </p>
               </div>
-
             </div>
             <!-- END: Display New Payment Method Details -->
 
@@ -659,20 +694,30 @@ h1 {
   outline: none;
 }
 
-.config-section button {
-  padding: 11px 20px;
-  background-color: #48bb78; /* Nicer green */
-  color: white;
+.global-actions-row button.action-button {
+  padding: 10px 20px;
+  font-size: 1em;
+  font-weight: 500;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1em;
-  font-weight: 500;
   transition: background-color 0.2s;
 }
 
-.config-section button:hover {
+.global-actions-row button.init-button {
+  background-color: #48bb78; /* Green */
+  color: white;
+}
+.global-actions-row button.init-button:hover {
   background-color: #38a169; /* Darker green */
+}
+
+.global-actions-row button.unmount-button {
+  background-color: #e53e3e; /* Red */
+  color: white;
+}
+.global-actions-row button.unmount-button:hover {
+  background-color: #c53030; /* Darker red */
 }
 
 /* styles for field config layout */
@@ -1059,8 +1104,16 @@ label[for="enableNameField"] + input[type="checkbox"] {
   color: #555;
 }
 .validation-event-section pre code {
-  background-color: #f0f0f0; /* Slightly different background */
+  background-color: #f0f0f0;
   border-color: #ddd;
+  display: block;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 10px;
+  border: 1px solid #c6f6d5; /* This was green, maybe should be neutral for this block */
+  border-radius: 4px;
+  margin-top: 5px;
 }
 
 .global-config-section textarea {
