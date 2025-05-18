@@ -60,12 +60,12 @@ const fieldConfigs = ref<
   // Initialize config for all fields we want to control
   // not putting all the fields here to avoid clutter
   name: { enabled: false, label: "", placeholder: "" },
-  // addressLine1: { enabled: false, label: "", placeholder: "" },
-  // addressLine2: { enabled: false, label: "", placeholder: "" },
-  // city: { enabled: false, label: "", placeholder: "" },
-  // state: { enabled: false, label: "", placeholder: "" },
-  // country: { enabled: false, label: "", placeholder: "" },
-  // emailAddress: { enabled: false, label: "", placeholder: "" },
+  addressLine1: { enabled: false, label: "", placeholder: "" },
+  addressLine2: { enabled: false, label: "", placeholder: "" },
+  city: { enabled: false, label: "", placeholder: "" },
+  state: { enabled: false, label: "", placeholder: "" },
+  country: { enabled: false, label: "", placeholder: "" },
+  emailAddress: { enabled: false, label: "", placeholder: "" },
   phoneNumber: { enabled: false, label: "", placeholder: "" },
 });
 
@@ -508,7 +508,40 @@ onMounted(() => {
                   <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.details.binDetails, null, 2) }}</code></pre>
                 </div>
               </div>
-              <!-- TODO: Add v-if for BANK_ACCOUNT details here in the future -->
+
+              <div
+                v-if="
+                  paymentResult?.paymentMethodType === 'BANK_ACCOUNT' &&
+                  paymentResult?.details
+                "
+              >
+                <h4>Bank Account Details:</h4>
+                <p v-if="paymentResult.details.bankAccountType">
+                  <strong>Account Type:</strong>
+                  <code>{{ paymentResult.details.bankAccountType }}</code>
+                </p>
+                <p v-if="paymentResult.details.accountNumberLast4">
+                  <strong>Account Last 4:</strong>
+                  <code>{{ paymentResult.details.accountNumberLast4 }}</code>
+                </p>
+                <p v-if="paymentResult.details.routingNumber">
+                  <strong>Routing Number (US):</strong>
+                  <code>{{ paymentResult.details.routingNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.transitNumber">
+                  <strong>Transit Number (CA):</strong>
+                  <code>{{ paymentResult.details.transitNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.institutionNumber">
+                  <strong>Institution Number (CA):</strong>
+                  <code>{{ paymentResult.details.institutionNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.country">
+                  <strong>Country:</strong>
+                  <code>{{ paymentResult.details.country }}</code>
+                </p>
+              </div>
+
             </div>
             <!-- END: Display New Payment Method Details -->
 
