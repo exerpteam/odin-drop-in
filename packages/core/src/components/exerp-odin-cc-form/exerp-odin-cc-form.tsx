@@ -178,6 +178,13 @@ export class ExerpOdinCcForm {
   @Prop() logLevel: LogLevel = DEFAULT_CORE_LOG_LEVEL;
 
   /**
+   * Optional theme configuration object passed from the facade.
+   * This object should conform to OdinPay.js v2's flat theme structure.
+   * @internal
+   */
+  @Prop() themeConfigProp?: any; // For now, 'any'. Facade ensures correct structure.
+
+  /**
    * Fired when OdinPay.js successfully returns a payment method token
    * after the user submits the form. The event detail contains the
    * `paymentMethodId` and, if applicable, the `billingInformation`
@@ -356,22 +363,20 @@ export class ExerpOdinCcForm {
       throw new Error(this.initializationError);
     }
 
-    const baseTheme = {
-      input: {
-        base: {
-          fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans',
-          fontSize: '16px',
-        },
-        invalid: {
-          color: 'red',
-          borderColor: 'red',
-        },
-      },
-    };
+    let effectiveTheme: any; // Use 'any' for flexibility or define a core-specific type
+
+    if (this.themeConfigProp && Object.keys(this.themeConfigProp).length > 0) {
+      this.log('DEBUG', '[Core] Using theme provided via themeConfigProp:', JSON.stringify(this.themeConfigProp));
+      effectiveTheme = this.themeConfigProp;
+    } else {
+      // Fallback to an empty theme object
+      this.log('DEBUG', '[Core] No themeConfigProp provided or empty. Passing empty theme object {} to OdinPay.js to use its defaults.');
+      effectiveTheme = {}; // Let OdinPay.js apply its own full default theme
+    }
 
     const odinPayOptions = {
       country: this.countryCode,
-      theme: baseTheme,
+      theme: effectiveTheme,
     };
     this.log('DEBUG', `About to call OdinPay(). Token provided: ${!!this.odinPublicToken}`, `Options:`, JSON.stringify(odinPayOptions));
 
@@ -670,7 +675,8 @@ export class ExerpOdinCcForm {
       return;
     }
 
-    if (this.onChangeValidation) { // this.onChangeValidation is the @Prop()
+    if (this.onChangeValidation) {
+      // this.onChangeValidation is the @Prop()
       // If a callback was provided from the facade, call it
       this.log('DEBUG', '[Core] Forwarding onChangeValidation event to facade:', fieldInformation);
       try {
@@ -682,7 +688,7 @@ export class ExerpOdinCcForm {
       // Default behavior: No-op or minimal logging if no facade callback
       this.log('DEBUG', '[Core] OdinPay.js onChangeValidation triggered (no user callback provided):', fieldInformation);
     }
-  };
+  }
 
   // private method to handle successful OdinPay callback
   private _handleOdinPaySuccessCallback(result: any) {

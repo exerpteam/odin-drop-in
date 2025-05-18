@@ -36,6 +36,10 @@ export namespace Components {
           * @defaultValue 'CARD'
          */
         "paymentMethodType": 'CARD' | 'ACH';
+        /**
+          * Optional theme configuration object passed from the facade. This object should conform to OdinPay.js v2's flat theme structure.
+         */
+        "themeConfigProp"?: any;
     }
 }
 export interface ExerpOdinCcFormCustomEvent<T> extends CustomEvent<T> {
@@ -102,6 +106,10 @@ declare namespace LocalJSX {
           * @defaultValue 'CARD'
          */
         "paymentMethodType"?: 'CARD' | 'ACH';
+        /**
+          * Optional theme configuration object passed from the facade. This object should conform to OdinPay.js v2's flat theme structure.
+         */
+        "themeConfigProp"?: any;
     }
     interface IntrinsicElements {
         "exerp-odin-cc-form": ExerpOdinCcForm;

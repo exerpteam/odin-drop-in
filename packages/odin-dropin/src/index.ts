@@ -36,6 +36,30 @@ export interface OdinFieldValidationEvent {
   errorCode?: string;
 }
 
+/**
+ * Represents a set of CSS-like style properties for OdinPay.js v2 theme.
+ * Allows for standard CSS properties and pseudo-selector keys.
+ */
+export interface OdinV2ThemeStyleObject {
+  [key: string]: string | number | { [pseudoSelector: string]: string | number }; // Basic style or nested pseudo-selector styles
+  // Example properties (non-exhaustive, refer to OdinPay.js v2 docs for allowed props):
+  // color?: string;
+  // fontFamily?: string;
+  // fontSize?: string;
+  // padding?: string;
+  // backgroundColor?: string;
+  // textDecoration?: string;
+  // '::placeholder'?: { color?: string; /* ... other placeholder styles ... */ };
+  // ':hover'?: { backgroundColor?: string; /* ... other hover styles ... */ };
+  // ':focus'?: { /* ... focus styles ... */ };
+}
+
+/**
+ * Configuration object for the OdinPay.js v2 theme.
+ * This is a flat object where keys are CSS properties or pseudo-selectors.
+ */
+export type OdinV2ThemeConfig = OdinV2ThemeStyleObject;
+
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
   countryCode: "US" | "CA";
@@ -59,6 +83,15 @@ interface OdinDropinInitializationParams {
    * @since 2.0.0
    */
   onChangeValidation?: (event: OdinFieldValidationEvent) => void;
+  /**
+   * Optional theme configuration object for OdinPay.js v2.
+   * This object should follow the flat structure specified by OdinPay.js v2,
+   * allowing CSS properties and pseudo-selectors.
+   * Border styling is NOT part of this theme and must be applied via external CSS
+   * to the field container divs.
+   * @since 2.0.0
+   */
+  theme?: OdinV2ThemeConfig;
 }
 
 export class OdinDropin {
@@ -67,11 +100,13 @@ export class OdinDropin {
   private eventListenersAttached: boolean = false;
   private currentLogLevel: LogLevel;
   private onChangeValidationCallback?: (event: OdinFieldValidationEvent) => void;
+  private themeConfig?: OdinV2ThemeConfig;
 
   constructor(params: OdinDropinInitializationParams) {
     this.params = params;
     this.currentLogLevel = params.logLevel ?? DEFAULT_LOG_LEVEL;
     this.onChangeValidationCallback = params.onChangeValidation;
+    this.themeConfig = params.theme;
 
     log(this.currentLogLevel, "INFO", "OdinDropin instance created.", {
       // Log object for easier viewing
@@ -79,6 +114,7 @@ export class OdinDropin {
       countryCode: params.countryCode,
       billingFieldsConfigProvided: !!params.billingFieldsConfig,
       onChangeValidationProvided: !!params.onChangeValidation,
+      themeProvided: !!params.theme,
     });
 
     // The custom element <exerp-odin-cc-form> should already be defined by the import at the top.
@@ -150,6 +186,15 @@ export class OdinDropin {
         log(this.currentLogLevel, "DEBUG", "[Facade] Passed onChangeValidation callback to core component's prop.");
       } else {
         log(this.currentLogLevel, "DEBUG", "[Facade] No onChangeValidation callback provided by user; core component prop will be undefined.");
+      }
+
+      if (this.themeConfig) {
+        // We'll name the prop on the core component `themeConfigProp` to avoid conflicts
+        // with any internal 'theme' properties if Stencil had them.
+        (this.odinCcFormComponent as any).themeConfigProp = this.themeConfig;
+        log(this.currentLogLevel, "DEBUG", "[Facade] Passed themeConfig to core component prop:", JSON.stringify(this.themeConfig));
+      } else {
+        log(this.currentLogLevel, "DEBUG", "[Facade] No themeConfig provided by user for core component.");
       }
 
       log(

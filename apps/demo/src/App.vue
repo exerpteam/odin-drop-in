@@ -7,6 +7,7 @@ import {
   OdinSubmitPayload,
   type LogLevel,
   type OdinFieldValidationEvent,
+  type OdinV2ThemeConfig,
 } from "@exerp/odin-dropin";
 
 type DropinBillingFieldsConfig =
@@ -30,6 +31,24 @@ const paymentMethodId = ref<string | null>(null);
 const paymentResult = ref<OdinSubmitPayload | null>(null);
 const displayedError = ref<OdinPayErrorPayload | null>(null);
 let odinDropinInstance: OdinDropin | null = null; // To store the instance
+
+const themeConfigString = ref(`{
+  "fontFamily": "Georgia, serif",
+  "fontSize": "15px",
+  "color": "#2c3e50",
+  "padding": "8px 10px",
+  "::placeholder": {
+    "color": "#bdc3c7"
+  },
+  ":hover": {
+    "color": "#e74c3c"
+  },
+  ":focus": {
+    "color": "#2980b9",
+    "backgroundColor": "#ecf0f1"
+  }
+}`); // Default example theme
+
 const lastValidationEvent = ref<OdinFieldValidationEvent | null>(null);
 
 const fieldConfigs = ref<
@@ -84,6 +103,28 @@ function getDefaultPlaceholder(
 function getDefaultLabel(fieldName: keyof typeof fieldConfigs.value): string {
   return DEFAULT_LABELS[fieldName] || fieldName;
 }
+
+const currentThemeConfig = computed((): OdinV2ThemeConfig | undefined => {
+  if (!themeConfigString.value.trim()) {
+    return undefined; // No theme if string is empty
+  }
+  try {
+    const parsed = JSON.parse(themeConfigString.value);
+    // Basic validation: ensure it's an object
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as OdinV2ThemeConfig;
+    }
+    console.warn("[Demo App] Invalid theme JSON structure. Must be an object.");
+    return undefined;
+  } catch (e) {
+    console.warn("[Demo App] Error parsing theme JSON:", e);
+    return undefined; // Invalid JSON, no theme
+  }
+});
 
 const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
   const config: DropinBillingFieldsConfig = {};
@@ -189,6 +230,7 @@ async function initializeAndMountDropin() {
       billingFieldsConfig: currentBillingFieldsConfig.value,
       logLevel: selectedLogLevel.value,
       paymentMethodType: paymentMethodType.value,
+      theme: currentThemeConfig.value,
       onSubmit: (result) => {
         console.log("[Demo App] onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
@@ -297,6 +339,27 @@ onMounted(() => {
           </select>
         </div>
       </div>
+
+      <div class="global-config-row">
+        <div style="flex-basis: 100%">
+          <label for="themeConfigJson"
+            >Theme Configuration (JSON for OdinPay.js v2):</label
+          >
+          <textarea
+            id="themeConfigJson"
+            v-model="themeConfigString"
+            rows="10"
+            placeholder="Enter OdinPay.js v2 theme JSON here, or leave empty for default."
+            class="full-width-input"
+            style="font-family: monospace; font-size: 0.9em"
+          ></textarea>
+          <small
+            >Borders and structural styling (like overall background of inputs)
+            are NOT part of this theme object. Apply those via external CSS to
+            the #odin-dropin-container or its children if needed.</small
+          >
+        </div>
+      </div>
     </div>
     <!-- END: Global Configuration Section -->
 
@@ -397,7 +460,10 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="validation-event-section results-section" v-if="lastValidationEvent">
+        <div
+          class="validation-event-section results-section"
+          v-if="lastValidationEvent"
+        >
           <h2>Last Field Validation Event:</h2>
           <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(lastValidationEvent, null, 2) }}</code></pre>
         </div>
@@ -965,4 +1031,66 @@ label[for="enableNameField"] + input[type="checkbox"] {
   border-color: #ddd;
 }
 
+.global-config-section textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin-bottom: 5px; /* Adjusted from 15px for inputs */
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 1em; /* Or adjust as needed */
+  line-height: 1.4;
+}
+.global-config-section textarea:focus {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+  outline: none;
+}
+.global-config-row small {
+  display: block;
+  font-size: 0.85em;
+  color: #718096; /* Slightly muted text */
+  margin-top: 5px;
+}
+
+/* START - Styles for OdinPay.js v2 Field Containers */
+/* Style the container that OUR component renders for each field group */
+:deep(.odin-field-container) {
+  border: 1px solid #ced4da; /* Default light grey border ON THE CONTAINER */
+  border-radius: 0.25rem; /* Standard border radius ON THE CONTAINER */
+  background-color: #ffffff; /* White background for the whole container area */
+  padding: 8px 10px; /* Padding INSIDE our container, around OdinPay's input div */
+  margin-bottom: 15px; /* Space between field containers */
+}
+
+/*
+  Now, for the .odin-input div (where OdinPay actually mounts its field),
+  we mostly want it to be transparent and fit naturally within our styled .odin-field-container.
+  OdinPay's theme will style the actual input element inside this.
+*/
+:deep(.odin-field-container .odin-input) {
+  background-color: transparent; /* Make OdinPay's direct container transparent */
+  /* Remove direct border/padding from here, as it's on .odin-field-container now */
+  /* border: none; */
+  /* padding: 0; */ /* Let OdinPay's theme handle internal padding of its actual input */
+  min-height: 38px; /* Or whatever min-height was working well from OdinPay's defaults */
+}
+
+/* Example: Style for when a field is potentially marked as invalid
+   (This would target the .odin-field-container)
+*/
+/*
+:deep(.odin-field-container.odin-field-invalid-container) {
+  border-color: #dc3545; // Red border for invalid
+  background-color: #fbeae
+}
+*/
+
+/* Styling the main drop-in container if needed */
+#odin-dropin-container {
+  /* background-color: #f8f9fa; */
+  /* padding: 15px; */
+}
+
+/* END Styles for OdinPay.js v2 Field Containers */
 </style>
