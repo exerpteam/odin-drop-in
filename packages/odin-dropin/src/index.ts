@@ -22,7 +22,6 @@ import {
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
   countryCode: "US" | "CA";
-  isSingleUse?: boolean;
   paymentMethodType?: "CARD" | "ACH";
   /**
    * Optional configuration to enable and customize billing fields.
@@ -106,18 +105,12 @@ export class OdinDropin {
         tokenProvided: this.params.odinPublicToken, // Display the public token because I need to when debugging
         paymentMethodType: this.odinCcFormComponent.paymentMethodType, // Log the payment method type
         countryCode: this.params.countryCode,
-        isSingleUse: this.params.isSingleUse ?? true, // Log effective value
         logLevel: this.currentLogLevel, // Log the level being passed
         billingFieldsConfig: this.params.billingFieldsConfig, // Log the config object (can be verbose)
       });
       this.odinCcFormComponent.odinPublicToken = this.params.odinPublicToken;
       this.odinCcFormComponent.countryCode = this.params.countryCode;
       this.odinCcFormComponent.logLevel = this.currentLogLevel;
-
-      // Pass isSingleUse (handle undefined by defaulting as the component does)
-      if (typeof this.params.isSingleUse === "boolean") {
-        this.odinCcFormComponent.isSingleUse = this.params.isSingleUse;
-      }
 
       if (this.params.billingFieldsConfig) {
         this.odinCcFormComponent.billingFieldsConfig =

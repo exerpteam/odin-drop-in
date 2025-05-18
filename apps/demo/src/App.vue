@@ -23,7 +23,6 @@ const availableLogLevels: LogLevel[] = [
 const odinPublicToken = ref("");
 const countryCode = ref<"US" | "CA">("US");
 const paymentMethodType = ref<"CARD" | "ACH">("CARD");
-const isSingleUse = ref<boolean>(true);
 const selectedLogLevel = ref<LogLevel>("WARN");
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
@@ -172,13 +171,12 @@ async function initializeAndMountDropin() {
 
   try {
     console.log(
-      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, paymentMethodType: ${paymentMethodType.value}, isSingleUse: ${isSingleUse.value}`
+      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, paymentMethodType: ${paymentMethodType.value}`
     );
     // Actual Drop-in Initialization Logic
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken.value,
       countryCode: countryCode.value,
-      isSingleUse: isSingleUse.value,
       billingFieldsConfig: currentBillingFieldsConfig.value,
       logLevel: selectedLogLevel.value,
       paymentMethodType: paymentMethodType.value,
@@ -275,10 +273,6 @@ onMounted(() => {
             />
             <label for="pmtAch">ACH (Bank)</label>
           </div>
-        </div>
-        <div class="checkbox-group">
-          <input id="isSingleUse" type="checkbox" v-model="isSingleUse" />
-          <label for="isSingleUse">Is Single Use</label>
         </div>
         <div>
           <label for="logLevelSelect">Log Level:</label>
