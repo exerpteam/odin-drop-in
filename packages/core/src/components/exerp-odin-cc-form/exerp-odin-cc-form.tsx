@@ -721,7 +721,11 @@ export class ExerpOdinCcForm {
   }
 
   private _handleOdinPayErrorCallback(result: any) {
-    this.log('ERROR', 'Error from OdinPay callback. Raw result.message:', result.message);
+    if (result && result.errors && Array.isArray(result.errors)) {
+      this.log('DEBUG', '[Core] OdinPay v2 `result.errors` detected. Will be processed by _parseOdinPayError.');
+    } else if (result && result.success === false) {
+      this.log('DEBUG', '[Core] `result.errors` not found or not an array, but result.success is false. _parseOdinPayError will process `result.message`.');
+    }
     const parsedErrorPayload = this._parseOdinPayError(result);
     this.odinErrorInternal.emit(parsedErrorPayload);
   }
@@ -773,44 +777,79 @@ export class ExerpOdinCcForm {
     const fieldErrors: OdinPayFieldError[] = [];
     let httpStatusCode: number | undefined;
 
-    if (typeof odinResult.message === 'string') {
-      generalMessage = odinResult.message;
-      // Try to extract HTTP status code
-      const httpMatch = odinResult.message.match(/Error: HTTP error. Status: (\d+)/);
-      if (httpMatch && httpMatch[1]) {
-        httpStatusCode = parseInt(httpMatch[1], 10);
-        code = httpStatusCode >= 500 ? 'API_SERVER_ERROR' : 'API_CLIENT_ERROR';
-        if (httpStatusCode === 401) code = 'API_AUTH_ERROR';
-      } else {
-        code = 'GENERAL_PAYMENT_ERROR';
-      }
-    } else if (Array.isArray(odinResult.message)) {
-      // For now, join array messages into one general message
-      // We can enhance this later if specific array messages need distinct handling
-      generalMessage = odinResult.message.join('; ');
-      code = 'VALIDATION_ERROR_GENERAL';
-      // We could also populate fieldErrors if we can parse these strings further
-      odinResult.message.forEach((msg: string, index: number) => {
-        fieldErrors.push({ field: `general[${index}]`, message: msg });
+    if (odinResult && odinResult.errors && Array.isArray(odinResult.errors) && odinResult.errors.length > 0) {
+      this.log('DEBUG', '[Core] Parsing errors from `result.errors` (OdinPay.js v2).');
+      code = 'VALIDATION_ERROR_FIELDS'; // Default for multiple field errors
+      generalMessage = 'Validation failed. Please check the fields highlighted.'; // Default message for v2 field errors
+
+      odinResult.errors.forEach((v2Error: any) => {
+        // Attempt to map v2Error to our OdinPayFieldError structure
+        // Common v2 ErrorObject structure: { selector: string, errorCode: string, fieldName: string, type: "FIELD_VALIDATION" | "BACKEND" }
+        // We primarily care about fieldName and a descriptive message based on errorCode.
+        // The 'message' property isn't directly in the v2 ErrorObject, we'll derive it or use errorCode.
+
+        let fieldKey = v2Error.fieldName || v2Error.selector || 'unknownField'; // Prefer fieldName
+        let errorMessage = v2Error.errorCode || 'Unknown validation error'; // Use errorCode as message for now
+
+        // We might want to map v2Error.errorCode to more user-friendly messages later
+        // e.g., if (v2Error.errorCode === 'REQUIRED') errorMessage = 'This field is required.';
+        // For now, using errorCode directly is a good start.
+
+        fieldErrors.push({
+          field: fieldKey,
+          message: errorMessage,
+        });
+
+        // If we encounter a "BACKEND" type error, it's likely more serious
+        // and might not be just a field validation issue.
+        if (v2Error.type === 'BACKEND') {
+          code = 'API_ERROR'; // Or a more specific backend error code if available
+          generalMessage = `A backend error occurred: ${errorMessage}`;
+          // Check if errorCode from backend error is a status code or can be mapped
+          // For now, this is a basic assignment.
+        }
       });
-    } else if (typeof odinResult.message === 'object' && odinResult.message !== null) {
-      generalMessage = 'Validation failed. Please check the fields below.'; // More generic message
-      code = 'VALIDATION_ERROR_FIELDS';
-      for (const fieldKey in odinResult.message) {
-        if (Object.prototype.hasOwnProperty.call(odinResult.message, fieldKey)) {
-          fieldErrors.push({
-            field: fieldKey,
-            message: odinResult.message[fieldKey] as string, // Assuming messages are strings
-          });
+
+      if (fieldErrors.length === 1 && code === 'VALIDATION_ERROR_FIELDS') {
+        // If only one field error, make the general message more specific.
+        generalMessage = `Validation failed for field '${fieldErrors[0].field}': ${fieldErrors[0].message}`;
+      }
+    } else if (odinResult && odinResult.message) {
+      // Fallback to v1-style error parsing if result.errors is not present
+      this.log('DEBUG', '[Core] `result.errors` not found or empty, parsing from `result.message` (OdinPay.js v1 style or unexpected v2).');
+      if (typeof odinResult.message === 'string') {
+        generalMessage = odinResult.message;
+        // Try to extract HTTP status code
+        const httpMatch = odinResult.message.match(/Error: HTTP error. Status: (\d+)/);
+        if (httpMatch && httpMatch[1]) {
+          httpStatusCode = parseInt(httpMatch[1], 10);
+          code = httpStatusCode >= 500 ? 'API_SERVER_ERROR' : 'API_CLIENT_ERROR';
+          if (httpStatusCode === 401) code = 'API_AUTH_ERROR';
+        } else {
+          code = 'GENERAL_PAYMENT_ERROR'; // Or ODIN_CALLBACK_ERROR if more appropriate
+        }
+      } else if (Array.isArray(odinResult.message)) {
+        generalMessage = 'Validation errors occurred.'; // More generic
+        code = 'VALIDATION_ERROR_GENERAL';
+        // We could also populate fieldErrors if we can parse these strings further
+        odinResult.message.forEach((msg: string, index: number) => {
+          fieldErrors.push({ field: `general[${index}]`, message: msg });
+        });
+      } else if (typeof odinResult.message === 'object' && odinResult.message !== null) {
+        generalMessage = 'Validation failed. Please check the fields below.'; // More generic message
+        code = 'VALIDATION_ERROR_FIELDS';
+        for (const fieldKey in odinResult.message) {
+          if (Object.prototype.hasOwnProperty.call(odinResult.message, fieldKey)) {
+            fieldErrors.push({
+              field: fieldKey,
+              message: odinResult.message[fieldKey] as string,
+            });
+          }
+        }
+        if (fieldErrors.length === 1 && fieldErrors[0].field.match(/^\d+$/)) {
+          generalMessage = fieldErrors[0].message; // If it's an object with numeric keys like "0"
         }
       }
-      if (fieldErrors.length === 1 && fieldErrors[0].field.match(/^\d+$/)) {
-        // If it's an object but has only numeric keys (like "0"), it's more like a general validation message
-        generalMessage = fieldErrors[0].message;
-      }
-    } else {
-      generalMessage = 'An unknown error occurred.';
-      code = 'UNKNOWN_ERROR';
     }
 
     const payload: OdinPayErrorPayload = {
