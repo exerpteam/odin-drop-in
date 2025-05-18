@@ -588,7 +588,7 @@ export class ExerpOdinCcForm {
               this.log('ERROR', 'OdinPay CARD callback with unexpected result structure:', result);
               this.odinErrorInternal.emit({
                 message: 'Received an unexpected result structure from OdinPay (Card).',
-                code: 'UNEXPECTED_CALLBACK_STRUCTURE_CARD',
+                code: 'UNEXPECTED_CALLBACK_STRUCTURE',
               });
             }
             this.isLoading = false;
@@ -615,7 +615,7 @@ export class ExerpOdinCcForm {
       this.log('WARN', 'OdinPay instance not available to create bank account form.');
       if (!this.initializationError) {
         this.initializationError = 'OdinPay instance is null, cannot render bank account form.';
-        this.odinErrorInternal.emit({ message: this.initializationError, code: 'INSTANCE_NULL_ACH' });
+        this.odinErrorInternal.emit({ message: this.initializationError, code: 'INSTANCE_NULL' });
       }
       this.odinFormRenderedBySDK = false;
       this.isLoading = false;
@@ -640,7 +640,7 @@ export class ExerpOdinCcForm {
               this.log('ERROR', '[Core] OdinPay BANK_ACCOUNT callback with unexpected result structure:', result);
               this.odinErrorInternal.emit({
                 message: 'Received an unexpected result structure from OdinPay (BANK_ACCOUNT).',
-                code: 'UNEXPECTED_CALLBACK_STRUCTURE_ACH',
+                code: 'UNEXPECTED_CALLBACK_STRUCTURE',
               });
             }
             this.isLoading = false;
@@ -656,7 +656,7 @@ export class ExerpOdinCcForm {
     } catch (error) {
       this.log('ERROR', '[Core] Error calling createBankAccountForm:', error);
       this.initializationError = (error as any)?.message || 'Failed to create OdinPay bank account form.';
-      this.odinErrorInternal.emit({ message: this.initializationError!, code: 'CREATE_FORM_ERROR_ACH', rawError: error });
+      this.odinErrorInternal.emit({ message: this.initializationError!, code: 'CREATE_FORM_ERROR_BANK_ACCOUNT', rawError: error });
       this.odinFormRenderedBySDK = false;
       this.isLoading = false;
     }
