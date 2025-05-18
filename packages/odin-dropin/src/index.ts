@@ -308,7 +308,6 @@ export class OdinDropin {
         );
         this.eventListenersAttached = false;
       }
-      // --- END ADD ---
       if (this.odinCcFormComponent.parentNode) {
         this.odinCcFormComponent.parentNode.removeChild(
           this.odinCcFormComponent
@@ -318,15 +317,6 @@ export class OdinDropin {
       log(this.currentLogLevel, "INFO", "exerp-odin-cc-form unmounted.");
     }
   }
-}
-
-// TODO: For UMD/global variable builds, Vite will use the 'name' option in build.lib
-// This allows for `new OdinDropin(...)` if the script is included directly.
-// No explicit window.OdinDropin = OdinDropin needed here if Vite is configured.
-// Keep the test function if you still use it for basic link verification, or remove it.
-export function initializeOdinDropin(): string {
-  console.log("initializeOdinDropin CALLED (legacy test function)");
-  return "Odin Drop-in Initialized (Test)";
 }
 
 export type {
