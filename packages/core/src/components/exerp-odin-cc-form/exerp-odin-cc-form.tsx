@@ -693,66 +693,81 @@ export class ExerpOdinCcForm {
   // private method to handle successful OdinPay callback
   private _handleOdinPaySuccessCallback(result: any) {
     // result from OdinPay.js
-    const paymentMethodTypeFromResult = result.paymentMethod?.type?.toUpperCase();
-    this.log('DEBUG', `[Core] Success callback. OdinPay type: ${paymentMethodTypeFromResult}, PM_ID:`, result.paymentMethod.id);
-    this.log('DEBUG', '[Core] Full paymentMethod object from OdinPay.js:', JSON.stringify(result.paymentMethod, null, 2));
+    const odinPayPM = result.paymentMethod; // Alias for readability
+    const paymentMethodTypeFromOdin = odinPayPM?.type?.toUpperCase();
+    this.log('DEBUG', `[Core] Success callback. OdinPay type: ${paymentMethodTypeFromOdin}, PM_ID:`, odinPayPM.id);
+    this.log('DEBUG', '[Core] Full paymentMethod object from OdinPay.js:', JSON.stringify(odinPayPM, null, 2));
 
     let billingInfo: OdinPayBillingInformation | undefined = undefined;
-    if (result.paymentMethod.billingInformation) {
-      billingInfo = result.paymentMethod.billingInformation as OdinPayBillingInformation;
-      this.log('DEBUG', 'Extracted billingInformation:', JSON.stringify(billingInfo, null, 2));
+    if (odinPayPM.billingInformation) {
+      billingInfo = odinPayPM.billingInformation as OdinPayBillingInformation;
+      this.log('DEBUG', '[Core] Extracted billingInformation:', JSON.stringify(billingInfo, null, 2));
     } else {
-      this.log('DEBUG', 'No billingInformation found in OdinPay result.paymentMethod.');
+      this.log('DEBUG', '[Core] No billingInformation found in OdinPay result.paymentMethod.');
     }
 
     let specificDetails: PaymentMethodSpecificDetails | undefined = undefined;
-    let submitPayloadType: 'CARD' | 'BANK_ACCOUNT' = 'CARD'; // Default, will be overridden
+    let submitPayloadType: 'CARD' | 'BANK_ACCOUNT'; // This will be strictly set
 
-    if (paymentMethodTypeFromResult === 'CARD') {
+    if (paymentMethodTypeFromOdin === 'CREDIT_CARD') {
+      // OdinPay.js v2 often uses "CREDIT_CARD"
       submitPayloadType = 'CARD';
       const cardDetails: CardPaymentMethodDetails = {};
-      if (result.paymentMethod.cardBrand) cardDetails.cardBrand = result.paymentMethod.cardBrand;
-      if (result.paymentMethod.accountNumber) {
-        // This is masked card number for CC
-        cardDetails.maskedAccountNumber = result.paymentMethod.accountNumber;
-        const maskedNumberString = String(result.paymentMethod.accountNumber);
-        if (maskedNumberString.length > 4) cardDetails.last4 = maskedNumberString.slice(-4);
-        else cardDetails.last4 = maskedNumberString;
+      if (odinPayPM.cardBrand) cardDetails.cardBrand = odinPayPM.cardBrand;
+      if (odinPayPM.accountNumber) {
+        // This is the masked card number for CC
+        cardDetails.maskedAccountNumber = String(odinPayPM.accountNumber);
+        if (cardDetails.maskedAccountNumber.length >= 4) {
+          cardDetails.last4 = cardDetails.maskedAccountNumber.slice(-4);
+        } else {
+          cardDetails.last4 = cardDetails.maskedAccountNumber; // Should not happen for cards
+        }
       }
-      if (result.paymentMethod.expirationDate) cardDetails.expirationDate = result.paymentMethod.expirationDate;
-      if (result.paymentMethod.binDetails) cardDetails.binDetails = result.paymentMethod.binDetails;
+      if (odinPayPM.expirationDate) cardDetails.expirationDate = odinPayPM.expirationDate;
+      if (odinPayPM.binDetails) cardDetails.binDetails = odinPayPM.binDetails;
       specificDetails = cardDetails;
-      this.log('DEBUG', '[Core] Extracted CARD details:', JSON.stringify(specificDetails, null, 2));
-    } else if (paymentMethodTypeFromResult === 'BANK_ACCOUNT') {
+      this.log('DEBUG', '[Core] Extracted CARD details for submit payload:', JSON.stringify(specificDetails, null, 2));
+    } else if (paymentMethodTypeFromOdin === 'BANK_ACCOUNT') {
       submitPayloadType = 'BANK_ACCOUNT';
       const achDetails: AchPaymentMethodDetails = {};
-      if (result.paymentMethod.bankAccountType) achDetails.bankAccountType = result.paymentMethod.bankAccountType;
-      // OdinPay might return masked 'accountNumber' or just last4. Adjust based on actual response.
-      // Assuming 'accountNumber' from OdinPay for ACH is masked and we can get last4.
-      if (result.paymentMethod.accountNumber) {
-        // This is masked account number for ACH
-        const maskedAcctNum = String(result.paymentMethod.accountNumber);
-        if (maskedAcctNum.length >= 4) achDetails.accountNumberLast4 = maskedAcctNum.slice(-4);
-        else achDetails.accountNumberLast4 = maskedAcctNum;
+      if (odinPayPM.bankAccountType) achDetails.bankAccountType = odinPayPM.bankAccountType;
+      if (odinPayPM.accountNumber) {
+        // This is the masked account number for ACH
+        const maskedAcctNum = String(odinPayPM.accountNumber);
+        if (maskedAcctNum.length >= 4) {
+          achDetails.accountNumberLast4 = maskedAcctNum.slice(-4);
+        } else {
+          achDetails.accountNumberLast4 = maskedAcctNum;
+        }
       }
-      if (result.paymentMethod.routingNumber) achDetails.routingNumber = result.paymentMethod.routingNumber;
-      if (result.paymentMethod.transitNumber) achDetails.transitNumber = result.paymentMethod.transitNumber;
-      if (result.paymentMethod.institutionNumber) achDetails.institutionNumber = result.paymentMethod.institutionNumber;
-      if (result.paymentMethod.country) achDetails.country = result.paymentMethod.country;
+      if (odinPayPM.routingNumber) achDetails.routingNumber = odinPayPM.routingNumber; // US
+      if (odinPayPM.transitNumber) achDetails.transitNumber = odinPayPM.transitNumber; // CA
+      if (odinPayPM.institutionNumber) achDetails.institutionNumber = odinPayPM.institutionNumber; // CA
+      if (odinPayPM.country) achDetails.country = odinPayPM.country as 'US' | 'CA';
       specificDetails = achDetails;
-      this.log('DEBUG', '[Core] Extracted BANK_ACCOUNT details:', JSON.stringify(specificDetails, null, 2));
+      this.log('DEBUG', '[Core] Extracted BANK_ACCOUNT details for submit payload:', JSON.stringify(specificDetails, null, 2));
     } else {
-      this.log('WARN', `[Core] Unknown payment method type from OdinPay.js callback: ${paymentMethodTypeFromResult}`);
-      // Fallback or error? For now, let's assume it must be one of the known types.
-      // If it can be something else, we need to handle that.
+      this.log('ERROR', `[Core] Unknown payment method type from OdinPay.js callback: ${paymentMethodTypeFromOdin}. Emitting error.`);
+      this.odinErrorInternal.emit({
+        code: 'UNKNOWN_PAYMENT_METHOD_TYPE',
+        message: `Received an unknown payment method type '${paymentMethodTypeFromOdin}' from OdinPay.`,
+        rawError: odinPayPM,
+      });
+      return; // Do not proceed to emit success for unknown type
     }
 
-    this.odinSubmitInternal.emit({
-      paymentMethodId: result.paymentMethod.id,
+    const submitPayload: OdinPaySubmitPayload = {
+      paymentMethodId: odinPayPM.id,
       paymentMethodType: submitPayloadType,
       billingInformation: billingInfo,
       details: specificDetails,
-    });
+    };
+    // Optionally add createdAt, updatedAt if desired and present in odinPayPM
+    // if (odinPayPM.createdAt) (submitPayload as any).createdAt = odinPayPM.createdAt;
+    // if (odinPayPM.updatedAt) (submitPayload as any).updatedAt = odinPayPM.updatedAt;
+
+    this.log('INFO', '[Core] Emitting odinSubmitInternal with payload:', JSON.stringify(submitPayload, null, 2));
+    this.odinSubmitInternal.emit(submitPayload);
   }
 
   private _handleOdinPayErrorCallback(result: any) {
