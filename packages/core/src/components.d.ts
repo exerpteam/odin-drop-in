@@ -28,6 +28,10 @@ export namespace Components {
          */
         "odinPublicToken"?: string;
         /**
+          * Optional callback function passed from the facade, to be invoked by OdinPay.js v2 during real-time field validation. The event payload should be compatible with OdinFieldValidationEvent defined in the facade.
+         */
+        "onChangeValidation"?: (event: any) => void;
+        /**
           * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'ACH' will render the bank account (ACH) form.
           * @defaultValue 'CARD'
          */
@@ -81,6 +85,10 @@ declare namespace LocalJSX {
           * The short-lived public token obtained from the ODIN backend, required to initialize the OdinPay.js library. Passed down from the facade.
          */
         "odinPublicToken"?: string;
+        /**
+          * Optional callback function passed from the facade, to be invoked by OdinPay.js v2 during real-time field validation. The event payload should be compatible with OdinFieldValidationEvent defined in the facade.
+         */
+        "onChangeValidation"?: (event: any) => void;
         /**
           * Fired when OdinPay.js returns an error during submission or if an internal setup error occurs. Contains the error message.
          */

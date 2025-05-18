@@ -191,6 +191,14 @@ export class ExerpOdinCcForm {
    */
   @Event() odinErrorInternal!: EventEmitter<OdinPayErrorPayload>;
 
+  /**
+   * Optional callback function passed from the facade, to be invoked by OdinPay.js v2
+   * during real-time field validation.
+   * The event payload should be compatible with OdinFieldValidationEvent defined in the facade.
+   * @internal
+   */
+  @Prop() onChangeValidation?: (event: any) => void; // Using 'any' for now, facade ensures correct type
+
   @State() private odinPayInstance: any = null;
   @State() private scriptLoaded: boolean = false;
   @State() private initializationError: string | null = null;
@@ -527,6 +535,7 @@ export class ExerpOdinCcForm {
           },
         },
         fields: odinPayCardFormFields,
+        onChangeValidation: this._handleOdinPayOnChangeValidation.bind(this),
       });
       this.log('INFO', 'OdinPay createCardForm called successfully.');
       this.initializationError = null;
@@ -540,9 +549,6 @@ export class ExerpOdinCcForm {
       this.isLoading = false;
     }
   }
-
-  // ⚠️ In packages/core/src/components/exerp-odin-cc-form/exerp-odin-cc-form.tsx
-  // Modify the _createOdinPayBankAccountForm method
 
   private _createOdinPayBankAccountForm() {
     if (!this.odinPayInstance) {
@@ -566,8 +572,6 @@ export class ExerpOdinCcForm {
           selector: this.getFieldId('odinSubmitButton'),
           callback: (result: any) => {
             this.log('DEBUG', '[Core] OdinPay BANK_ACCOUNT submit callback RAW result:', JSON.stringify(result, null, 2));
-            // ⚠️ The _handleOdinPaySuccessCallback and _handleOdinPayErrorCallback need to be robust
-            // to handle slight variations if any, or we make them more generic.
             if (result && result.success === true && result.paymentMethod && result.paymentMethod.id) {
               this._handleOdinPaySuccessCallback(result);
             } else if (result && result.success === false) {
@@ -583,6 +587,7 @@ export class ExerpOdinCcForm {
           },
         },
         fields: odinPayBankAccountFormFields,
+        onChangeValidation: this._handleOdinPayOnChangeValidation.bind(this),
       });
       this.log('INFO', '[Core] OdinPay createBankAccountForm called successfully.');
       this.initializationError = null;
@@ -654,6 +659,30 @@ export class ExerpOdinCcForm {
     this.log('DEBUG', '[Core] Final Bank account fields config:', JSON.stringify(fields));
     return fields;
   }
+
+  private _handleOdinPayOnChangeValidation(fieldInformation: any) {
+    // fieldInformation is the object directly from OdinPay.js v2
+    // e.g., { type: "FIELD_VALIDATION", fieldName: string, selector: string, isValid: boolean, errorCode?: string }
+
+    if (typeof this.log !== 'function') {
+      console.error('[Core Error] Critical: `this.log` is not a function inside _handleOdinPayOnChangeValidation. `this` is:', this);
+      // Cannot proceed if `this` is not the component instance.
+      return;
+    }
+
+    if (this.onChangeValidation) { // this.onChangeValidation is the @Prop()
+      // If a callback was provided from the facade, call it
+      this.log('DEBUG', '[Core] Forwarding onChangeValidation event to facade:', fieldInformation);
+      try {
+        this.onChangeValidation(fieldInformation);
+      } catch (e) {
+        this.log('ERROR', '[Core] Error calling user-provided onChangeValidation callback from facade:', e);
+      }
+    } else {
+      // Default behavior: No-op or minimal logging if no facade callback
+      this.log('DEBUG', '[Core] OdinPay.js onChangeValidation triggered (no user callback provided):', fieldInformation);
+    }
+  };
 
   // private method to handle successful OdinPay callback
   private _handleOdinPaySuccessCallback(result: any) {

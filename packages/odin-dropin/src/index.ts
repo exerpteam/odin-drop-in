@@ -10,6 +10,7 @@ import type {
   CardPaymentMethodDetails as CoreCardPaymentMethodDetails,
   AchPaymentMethodDetails as CoreAchPaymentMethodDetails,
   PaymentMethodSpecificDetails as CorePaymentMethodSpecificDetails,
+  OdinPayFieldError,
 } from "../../core/dist/types/components/exerp-odin-cc-form/exerp-odin-cc-form";
 
 import {
@@ -18,6 +19,22 @@ import {
   LogLevel,
   DEFAULT_LOG_LEVEL,
 } from "./utils/logger";
+
+/**
+ * Payload for the `onChangeValidation` callback, mirroring OdinPay.js v2's `fieldInformation` object.
+ */
+export interface OdinFieldValidationEvent {
+  /** The type of event, typically "FIELD_VALIDATION". */
+  type: string;
+  /** The name of the field being validated (e.g., "cardNumber", "postalCode"). */
+  fieldName: string;
+  /** The CSS selector for the field's container. */
+  selector: string;
+  /** Indicates if the field is currently valid. */
+  isValid: boolean;
+  /** An error code if the field is invalid (e.g., "INVALID", "REQUIRED", "MAX_LENGTH_EXCEEDED"). */
+  errorCode?: string;
+}
 
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
@@ -34,6 +51,14 @@ interface OdinDropinInitializationParams {
   onSubmit: (result: CoreOdinPaySubmitPayload) => void;
   onError: (error: CoreOdinPayErrorPayload) => void;
   logLevel?: LogLevel;
+  /**
+   * Optional callback function invoked by OdinPay.js v2 during user interaction
+   * with input fields, providing real-time validation status for individual fields.
+   *
+   * @param event - An `OdinFieldValidationEvent` object containing details about the validated field.
+   * @since 2.0.0
+   */
+  onChangeValidation?: (event: OdinFieldValidationEvent) => void;
 }
 
 export class OdinDropin {
@@ -41,16 +66,19 @@ export class OdinDropin {
   private odinCcFormComponent: HTMLExerpOdinCcFormElement | null = null;
   private eventListenersAttached: boolean = false;
   private currentLogLevel: LogLevel;
+  private onChangeValidationCallback?: (event: OdinFieldValidationEvent) => void;
 
   constructor(params: OdinDropinInitializationParams) {
     this.params = params;
     this.currentLogLevel = params.logLevel ?? DEFAULT_LOG_LEVEL;
+    this.onChangeValidationCallback = params.onChangeValidation;
 
     log(this.currentLogLevel, "INFO", "OdinDropin instance created.", {
       // Log object for easier viewing
       logLevel: this.currentLogLevel,
       countryCode: params.countryCode,
       billingFieldsConfigProvided: !!params.billingFieldsConfig,
+      onChangeValidationProvided: !!params.onChangeValidation,
     });
 
     // The custom element <exerp-odin-cc-form> should already be defined by the import at the top.
@@ -115,6 +143,13 @@ export class OdinDropin {
       if (this.params.billingFieldsConfig) {
         this.odinCcFormComponent.billingFieldsConfig =
           this.params.billingFieldsConfig;
+      }
+
+      if (this.onChangeValidationCallback) { // this.onChangeValidationCallback is from constructor
+        this.odinCcFormComponent.onChangeValidation = this.onChangeValidationCallback;
+        log(this.currentLogLevel, "DEBUG", "[Facade] Passed onChangeValidation callback to core component's prop.");
+      } else {
+        log(this.currentLogLevel, "DEBUG", "[Facade] No onChangeValidation callback provided by user; core component prop will be undefined.");
       }
 
       log(
