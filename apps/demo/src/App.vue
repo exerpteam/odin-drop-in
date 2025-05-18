@@ -24,7 +24,7 @@ const availableLogLevels: LogLevel[] = [
 // --- State ---
 const odinPublicToken = ref("");
 const countryCode = ref<"US" | "CA">("US");
-const paymentMethodType = ref<"CARD" | "ACH">("CARD");
+const paymentMethodType = ref<"CARD" | "BANK_ACCOUNT">("CARD");
 const selectedLogLevel = ref<LogLevel>("WARN");
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
@@ -242,9 +242,8 @@ async function initializeAndMountDropin() {
           result.paymentMethodType
         );
         if (result.paymentMethodType === "BANK_ACCOUNT" && result.details) {
-          // ⚠️ Note: Report says 'BANK_ACCOUNT', our type says 'ACH'. We need to align this. For now, let's assume our types are what we expect from the facade.
           const achDetails = result.details; // Will be AchPaymentMethodDetails
-          console.log("[Demo App] ACH Details:", achDetails);
+          console.log("[Demo App] BANK_ACCOUNT Details:", achDetails);
         }
       },
       onError: (error) => {
@@ -320,10 +319,10 @@ onMounted(() => {
             <input
               type="radio"
               id="pmtAch"
-              value="ACH"
+              value="BANK_ACCOUNT"
               v-model="paymentMethodType"
             />
-            <label for="pmtAch">ACH (Bank)</label>
+            <label for="pmtAch">Bank Account</label>
           </div>
         </div>
         <div>
@@ -509,7 +508,7 @@ onMounted(() => {
                   <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.details.binDetails, null, 2) }}</code></pre>
                 </div>
               </div>
-              <!-- TODO: Add v-if for ACH details here in the future -->
+              <!-- TODO: Add v-if for BANK_ACCOUNT details here in the future -->
             </div>
             <!-- END: Display New Payment Method Details -->
 

@@ -14,8 +14,8 @@ This package provides the public facade for integrating the ODIN Payment Drop-in
       <img src="../../docs/assets/images/dropin-card-example-fields.png" alt="ODIN Drop-in Card Example" width="350">
     </td>
     <td align="center" valign="top">
-      <strong>Example: ACH Payment Form</strong><br>
-      <img src="../../docs/assets/images/dropin-ach-example-fields.png" alt="ODIN Drop-in ACH Example" width="350">
+      <strong>Example: BANK_ACCOUNT Payment Form</strong><br>
+      <img src="../../docs/assets/images/dropin-ach-example-fields.png" alt="ODIN Drop-in BANK_ACCOUNT Example" width="350">
     </td>
   </tr>
 </table>
@@ -57,9 +57,9 @@ Initializes a new instance of the ODIN Drop-in controller.
 *   `params` (`OdinDropinInitializationParams`, **Required**): An object containing configuration parameters:
     *   `odinPublicToken` (`string`, **Required**): The short-lived public token obtained securely from your backend (which fetches it from the ODIN `/auth2/public-token` endpoint). This token is used to authenticate and initialize the underlying `OdinPay.js` library.
     *   `countryCode` (`'US' | 'CA'`, **Required**): Specifies the country for which the payment form should be configured. This influences aspects like postal code field labeling and validation rules within `OdinPay.js`.
-    *   `paymentMethodType?` (`'CARD' | 'ACH'`, *Optional*, Default: `'CARD'`): Specifies the type of payment form to render.
+    *   `paymentMethodType?` (`'CARD' | 'BANK_ACCOUNT'`, *Optional*, Default: `'CARD'`): Specifies the type of payment form to render.
         *   `'CARD'`: Renders the credit card payment form.
-        *   `'ACH'`: Renders the ACH (bank account) payment form.
+        *   `'BANK_ACCOUNT'`: Renders the bank account payment form.
     *   `isSingleUse` (`boolean`, *Optional*, Default: `true`): Controls how the generated payment method token should be treated.
         *   `true`: Intended for a one-time payment.
         *   `false`: Intended for saving the payment method.
@@ -82,8 +82,8 @@ Initializes a new instance of the ODIN Drop-in controller.
                 // Other fields like addressLine2, state, country etc., will not be shown.
             }
             ```
-        *   **Usage for ACH:** For ACH, the `name` field in `billingFieldsConfig` (if customized or enabled as `true`) refers to the "Account Holder Name". Other optional billing fields (`addressLine1`, `postalCode`, etc.) can also be configured and will be collected alongside ACH details. The fields `accountNumber`, `bankAccountType`, `routingNumber` (US), `transitNumber` (CA), and `institutionNumber` (CA) are core to the ACH form and their labels/placeholders can also be customized using their respective keys in `billingFieldsConfig` (e.g., `accountNumber: { label: 'Bank Account No.' }`).
-        *   **Example (ACH field customization):**
+        *   **Usage for BANK_ACCOUNT:** For Bank Account, the `name` field in `billingFieldsConfig` (if customized or enabled as `true`) refers to the "Account Holder Name". Other optional billing fields (`addressLine1`, `postalCode`, etc.) can also be configured and will be collected alongside the Bank Account details. The fields `accountNumber`, `bankAccountType`, `routingNumber` (US), `transitNumber` (CA), and `institutionNumber` (CA) are core to the Bank Account form and their labels/placeholders can also be customized using their respective keys in `billingFieldsConfig` (e.g., `accountNumber: { label: 'Bank Account No.' }`).
+        *   **Example (Bank Account field customization):**
             ```javascript
             billingFieldsConfig: {
                 name: { label: 'Full Name on Account' }, // Custom label for Account Holder Name
@@ -140,7 +140,7 @@ Initializes a new instance of the ODIN Drop-in controller.
                       routingNumber?: string;         // The routing number (for US accounts)
                       transitNumber?: string;         // The transit number (for Canadian accounts)
                       institutionNumber?: string;     // The institution number (for Canadian accounts)
-                      country?: 'US' | 'CA';          // The country context for the ACH details
+                      country?: 'US' | 'CA';          // The country context for the Bank Account details
                     }
                     ```
     *   `onError` (`(error: OdinPayErrorPayload) => void`, **Required**): A callback function invoked if an error occurs during the `OdinPay.js` submission process, during the initialization of `OdinPay.js`, or if an internal setup error occurs within the drop-in component.
@@ -256,7 +256,7 @@ async function initializeOdin() {
             throw new Error('Valid Country Code (US or CA) is required.');
         }
 
-        const pmtType = confirm("Use ACH? (Cancel for Card)") ? 'ACH' : 'CARD'; // Example of selecting payment method type
+        const pmtType = confirm("Use BANK_ACCOUNT? (Cancel for Card)") ? 'BANK_ACCOUNT' : 'CARD'; // Example of selecting payment method type
 
         const enableNameField = confirm("Enable 'Name on Card' field?"); // Example
         const currentBillingFieldsConfig: BillingFieldsConfig = {
@@ -274,7 +274,7 @@ async function initializeOdin() {
         odinDropinInstance = new OdinDropin({
             odinPublicToken: token,
             countryCode: country as 'US' | 'CA',
-            paymentMethodType: pmtType as 'CARD' | 'ACH',
+            paymentMethodType: pmtType as 'CARD' | 'BANK_ACCOUNT',
             isSingleUse: true, // Example: one-time payment
             billingFieldsConfig: currentBillingFieldsConfig,
             onSubmit: (result) => {

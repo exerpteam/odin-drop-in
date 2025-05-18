@@ -32,10 +32,10 @@ export namespace Components {
          */
         "onChangeValidation"?: (event: any) => void;
         /**
-          * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'ACH' will render the bank account (ACH) form.
+          * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'BANK_ACCOUNT' will render the bank account form.
           * @defaultValue 'CARD'
          */
-        "paymentMethodType": 'CARD' | 'ACH';
+        "paymentMethodType": 'CARD' | 'BANK_ACCOUNT';
         /**
           * Optional theme configuration object passed from the facade. This object should conform to OdinPay.js v2's flat theme structure.
          */
@@ -102,10 +102,10 @@ declare namespace LocalJSX {
          */
         "onOdinSubmitInternal"?: (event: ExerpOdinCcFormCustomEvent<OdinPaySubmitPayload>) => void;
         /**
-          * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'ACH' will render the bank account (ACH) form.
+          * Specifies the type of payment method the form should handle. 'CARD' will render the credit card form. 'BANK_ACCOUNT' will render the bank account form.
           * @defaultValue 'CARD'
          */
-        "paymentMethodType"?: 'CARD' | 'ACH';
+        "paymentMethodType"?: 'CARD' | 'BANK_ACCOUNT';
         /**
           * Optional theme configuration object passed from the facade. This object should conform to OdinPay.js v2's flat theme structure.
          */

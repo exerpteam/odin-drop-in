@@ -41,7 +41,10 @@ export interface OdinFieldValidationEvent {
  * Allows for standard CSS properties and pseudo-selector keys.
  */
 export interface OdinV2ThemeStyleObject {
-  [key: string]: string | number | { [pseudoSelector: string]: string | number }; // Basic style or nested pseudo-selector styles
+  [key: string]:
+    | string
+    | number
+    | { [pseudoSelector: string]: string | number }; // Basic style or nested pseudo-selector styles
   // Example properties (non-exhaustive, refer to OdinPay.js v2 docs for allowed props):
   // color?: string;
   // fontFamily?: string;
@@ -63,7 +66,7 @@ export type OdinV2ThemeConfig = OdinV2ThemeStyleObject;
 interface OdinDropinInitializationParams {
   odinPublicToken: string;
   countryCode: "US" | "CA";
-  paymentMethodType?: "CARD" | "ACH";
+  paymentMethodType?: "CARD" | "BANK_ACCOUNT";
   /**
    * Optional configuration to enable and customize billing fields.
    * Fields can be enabled with `true` (using default label/placeholder)
@@ -99,7 +102,9 @@ export class OdinDropin {
   private odinCcFormComponent: HTMLExerpOdinCcFormElement | null = null;
   private eventListenersAttached: boolean = false;
   private currentLogLevel: LogLevel;
-  private onChangeValidationCallback?: (event: OdinFieldValidationEvent) => void;
+  private onChangeValidationCallback?: (
+    event: OdinFieldValidationEvent
+  ) => void;
   private themeConfig?: OdinV2ThemeConfig;
 
   constructor(params: OdinDropinInitializationParams) {
@@ -162,6 +167,7 @@ export class OdinDropin {
       this.odinCcFormComponent.paymentMethodType =
         this.params.paymentMethodType ?? "CARD";
       if (this.params.paymentMethodType) {
+        // Ensure the type matches the allowed prop types "CARD" | "BANK_ACCOUNT"
         this.odinCcFormComponent.paymentMethodType =
           this.params.paymentMethodType;
       }
@@ -181,20 +187,39 @@ export class OdinDropin {
           this.params.billingFieldsConfig;
       }
 
-      if (this.onChangeValidationCallback) { // this.onChangeValidationCallback is from constructor
-        this.odinCcFormComponent.onChangeValidation = this.onChangeValidationCallback;
-        log(this.currentLogLevel, "DEBUG", "[Facade] Passed onChangeValidation callback to core component's prop.");
+      if (this.onChangeValidationCallback) {
+        // this.onChangeValidationCallback is from constructor
+        this.odinCcFormComponent.onChangeValidation =
+          this.onChangeValidationCallback;
+        log(
+          this.currentLogLevel,
+          "DEBUG",
+          "[Facade] Passed onChangeValidation callback to core component's prop."
+        );
       } else {
-        log(this.currentLogLevel, "DEBUG", "[Facade] No onChangeValidation callback provided by user; core component prop will be undefined.");
+        log(
+          this.currentLogLevel,
+          "DEBUG",
+          "[Facade] No onChangeValidation callback provided by user; core component prop will be undefined."
+        );
       }
 
       if (this.themeConfig) {
         // We'll name the prop on the core component `themeConfigProp` to avoid conflicts
         // with any internal 'theme' properties if Stencil had them.
         (this.odinCcFormComponent as any).themeConfigProp = this.themeConfig;
-        log(this.currentLogLevel, "DEBUG", "[Facade] Passed themeConfig to core component prop:", JSON.stringify(this.themeConfig));
+        log(
+          this.currentLogLevel,
+          "DEBUG",
+          "[Facade] Passed themeConfig to core component prop:",
+          JSON.stringify(this.themeConfig)
+        );
       } else {
-        log(this.currentLogLevel, "DEBUG", "[Facade] No themeConfig provided by user for core component.");
+        log(
+          this.currentLogLevel,
+          "DEBUG",
+          "[Facade] No themeConfig provided by user for core component."
+        );
       }
 
       log(

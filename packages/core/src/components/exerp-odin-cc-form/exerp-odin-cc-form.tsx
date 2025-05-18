@@ -16,7 +16,7 @@ export interface CardPaymentMethodDetails {
   maskedAccountNumber?: string; // The masked account number from OdinPay.js
 }
 
-// Placeholder for future ACH payment method details - define it now for structure
+// Placeholder for future BANK_ACCOUNT payment method details - define it now for structure
 export interface AchPaymentMethodDetails {
   bankAccountType?: 'CHECKING' | 'SAVINGS';
   accountNumberLast4?: string; // OdinPay.js might return masked or last4 directly
@@ -58,11 +58,11 @@ export type BillingFieldsConfig = {
   // Mandatory fields like postalCode can only be customized (they are always implicitly 'true')
   postalCode?: FieldCustomization; // CC
   cardInformation?: FieldCustomization; // CC
-  accountNumber?: FieldCustomization; // ACH
-  bankAccountType?: FieldCustomization; // ACH - Label for the select
-  routingNumber?: FieldCustomization; // ACH - US
-  transitNumber?: FieldCustomization; // ACH - CA
-  institutionNumber?: FieldCustomization; // ACH - CA
+  accountNumber?: FieldCustomization; // BANK_ACCOUNT
+  bankAccountType?: FieldCustomization; // BANK_ACCOUNT - Label for the select
+  routingNumber?: FieldCustomization; // BANK_ACCOUNT - US
+  transitNumber?: FieldCustomization; // BANK_ACCOUNT - CA
+  institutionNumber?: FieldCustomization; // BANK_ACCOUNT - CA
 };
 
 // Represents customization for a single field
@@ -105,7 +105,7 @@ const DEFAULT_FIELD_TEXT: { [key: string]: FieldCustomization } = {
   emailAddress: { label: 'Email Address', placeholder: 'you@example.com' },
   phoneNumber: { label: 'Phone Number', placeholder: '(123) 456-7890' },
 
-  // ACH Specific Defaults
+  // BANK_ACCOUNT Specific Defaults
   accountNumber: { label: 'Account Number', placeholder: 'Account Number' },
   bankAccountType: { label: 'Account Type', placeholder: 'Select Account Type' }, // Placeholder for the select prompt
   routingNumber: { label: 'Routing Number', placeholder: 'Routing Number' }, // US
@@ -129,10 +129,10 @@ export class ExerpOdinCcForm {
   /**
    * Specifies the type of payment method the form should handle.
    * 'CARD' will render the credit card form.
-   * 'ACH' will render the bank account (ACH) form.
+   * 'BANK_ACCOUNT' will render the bank account form.
    * @defaultValue 'CARD'
    */
-  @Prop() paymentMethodType: 'CARD' | 'ACH' = 'CARD';
+  @Prop() paymentMethodType: 'CARD' | 'BANK_ACCOUNT' = 'CARD';
 
   /**
    * The country code ('US' or 'CA') for which the payment form should be configured.
@@ -261,7 +261,7 @@ export class ExerpOdinCcForm {
   private getLabel(fieldName: keyof BillingFieldsConfig): string {
     const customLabel = this.getFieldCustomization(fieldName)?.label;
     if (fieldName === 'name' && !customLabel) {
-      return this.paymentMethodType === 'ACH' ? 'Account Holder Name' : DEFAULT_FIELD_TEXT['name'].label!;
+      return this.paymentMethodType === 'BANK_ACCOUNT' ? 'Account Holder Name' : DEFAULT_FIELD_TEXT['name'].label!;
     }
     return customLabel ?? DEFAULT_FIELD_TEXT[fieldName]?.label ?? fieldName; // Fallback to fieldName if no default
   }
@@ -504,13 +504,13 @@ export class ExerpOdinCcForm {
     this.log('DEBUG', `Attempting to create form for paymentMethodType: ${this.paymentMethodType}.`);
     this.isLoading = true;
 
-    if (this.paymentMethodType === 'ACH') {
-      this.log('INFO', 'ACH form creation selected. Calling _createOdinPayBankAccountForm()');
-      this._createOdinPayBankAccountForm(); // We will create this method next
+    if (this.paymentMethodType === 'BANK_ACCOUNT') {
+      this.log('INFO', 'BANK_ACCOUNT form creation selected. Calling _createOdinPayBankAccountForm()');
+      this._createOdinPayBankAccountForm();
     } else {
       // Default to CARD
       this.log('INFO', 'CARD form creation selected. Calling _createOdinPayCardForm()');
-      this._createOdinPayCardForm(); // We will refactor existing logic into this method
+      this._createOdinPayCardForm();
     }
   }
 
@@ -584,7 +584,7 @@ export class ExerpOdinCcForm {
             } else {
               this.log('ERROR', '[Core] OdinPay BANK_ACCOUNT callback with unexpected result structure:', result);
               this.odinErrorInternal.emit({
-                message: 'Received an unexpected result structure from OdinPay (ACH).',
+                message: 'Received an unexpected result structure from OdinPay (BANK_ACCOUNT).',
                 code: 'UNEXPECTED_CALLBACK_STRUCTURE_ACH',
               });
             }
@@ -626,7 +626,7 @@ export class ExerpOdinCcForm {
       name: {
         // This is 'Account Holder Name'
         selector: this.getFieldId('accountHolderName'),
-        placeholder: this.getPlaceholder('name'), // Assumes 'name' key in DEFAULT_FIELD_TEXT is "Account Holder Name" when paymentMethodType is ACH, or user customizes
+        placeholder: this.getPlaceholder('name'), // Assumes 'name' key in DEFAULT_FIELD_TEXT is "Account Holder Name" when paymentMethodType is BANK_ACCOUNT, or user customizes
         // initialValue: this.billingFieldsConfig?.name?.initialValue // if supporting initial values
       },
     };
@@ -732,7 +732,7 @@ export class ExerpOdinCcForm {
       const achDetails: AchPaymentMethodDetails = {};
       if (odinPayPM.bankAccountType) achDetails.bankAccountType = odinPayPM.bankAccountType;
       if (odinPayPM.accountNumber) {
-        // This is the masked account number for ACH
+        // This is the masked account number for BANK_ACCOUNT
         const maskedAcctNum = String(odinPayPM.accountNumber);
         if (maskedAcctNum.length >= 4) {
           achDetails.accountNumberLast4 = maskedAcctNum.slice(-4);
@@ -993,12 +993,12 @@ export class ExerpOdinCcForm {
     // Optional billing fields can be shared if the design calls for it.
     // For simplicity, let's assume the same optional fields for now.
     const optionalAchBillingFieldRenderOrder: OptionalBillingFieldName[] = [
-      // 'name' for ACH is 'Account Holder Name', handled separately
+      // 'name' for BANK_ACCOUNT is 'Account Holder Name', handled separately
       'addressLine1',
       'addressLine2',
       'city',
       'state',
-      // 'postalCode', // Postal code can be relevant for ACH billing
+      // 'postalCode', // Postal code can be relevant for BANK_ACCOUNT billing
       'country',
       'emailAddress',
       'phoneNumber',
@@ -1065,7 +1065,7 @@ export class ExerpOdinCcForm {
         )}
 
         {/* Conditional Rendering of Fields */}
-        {this.paymentMethodType === 'ACH' ? this.renderAchFields() : this.renderCardFields()}
+        {this.paymentMethodType === 'BANK_ACCOUNT' ? this.renderAchFields() : this.renderCardFields()}
 
         {/* Submit Area */}
         {this.renderSubmitArea()}
