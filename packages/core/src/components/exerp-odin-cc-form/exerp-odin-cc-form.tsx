@@ -211,6 +211,8 @@ export class ExerpOdinCcForm {
   @State() private initializationError: string | null = null;
   @State() private isLoading: boolean = false;
   @State() private odinFormRenderedBySDK: boolean = false;
+  @State() private odinPayInstanceReady: boolean = false;
+  @State() private odinFormCreationAttempted: boolean = false;
 
   private readonly LogLevelSeverity: Record<LogLevel, number> = {
     NONE: 0,
@@ -297,7 +299,7 @@ export class ExerpOdinCcForm {
       logLevel: this.logLevel,
     }); // Check for countryCode before initializing
     if (this.odinPublicToken && this.countryCode) {
-      await this.initializeOdinPayAndForm();
+      await this.initializeOdinPayInstance();
     } else if (!this.countryCode) {
       const errorMsg = 'countryCode prop is missing. Cannot initialize OdinPay.';
       this.log('ERROR', errorMsg);
@@ -307,13 +309,36 @@ export class ExerpOdinCcForm {
     }
   }
 
+  componentDidUpdate() {
+    this.log(
+      'DEBUG',
+      '[Core] componentDidUpdate triggered. odinPayInstanceReady:',
+      this.odinPayInstanceReady,
+      'odinFormCreationAttempted:',
+      this.odinFormCreationAttempted,
+      'has odinPayInstance:',
+      !!this.odinPayInstance,
+    );
+    if (this.odinPayInstanceReady && !!this.odinPayInstance && !this.odinFormCreationAttempted) {
+      this.log('DEBUG', '[Core] Conditions met in componentDidUpdate to create OdinPay form.');
+      this.isLoading = true; // Set loading before attempting form creation
+      this.odinFormCreationAttempted = true; // Prevent multiple attempts
+      // Ensure DOM is flushed before calling create form.
+      // Using a minimal timeout can sometimes help ensure Stencil's render queue is processed.
+      setTimeout(() => {
+        this._createOdinPayForm(); // This contains the call to createCardForm or createBankAccountForm
+        // isLoading will be set to false inside _createOdinPayCardForm/_createOdinPayBankAccountForm or their callbacks
+      }, 0);
+    }
+  }
+
   @Watch('odinPublicToken')
   async watchOdinPublicToken(newValue: string, oldValue: string) {
     if (newValue && newValue !== oldValue) {
       this.log('DEBUG', 'odinPublicToken changed, re-initializing OdinPay. Current countryCode:', this.countryCode);
       // Check for countryCode before re-initializing
       if (this.countryCode) {
-        await this.initializeOdinPayAndForm();
+        await this.reinitializeOdinPay();
       } else {
         const errorMsg = 'countryCode prop is missing on token change. Cannot re-initialize OdinPay.';
         this.log('ERROR', errorMsg);
@@ -329,7 +354,7 @@ export class ExerpOdinCcForm {
   async watchCountryCode(newValue: string, oldValue: string) {
     if (newValue && newValue !== oldValue && this.odinPublicToken) {
       this.log('DEBUG', 'countryCode changed, re-initializing OdinPay. New value:', newValue);
-      await this.initializeOdinPayAndForm();
+      await this.reinitializeOdinPay();
     } else if (!newValue && this.odinPublicToken) {
       const errorMsg = 'countryCode prop was unset. Cannot re-initialize OdinPay.';
       this.log('ERROR', errorMsg);
@@ -337,6 +362,34 @@ export class ExerpOdinCcForm {
       this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE_ON_UPDATE' });
       this.isLoading = false;
     }
+  }
+
+  @Watch('paymentMethodType')
+  watchPaymentMethodType(newValue: 'CARD' | 'BANK_ACCOUNT', oldValue: 'CARD' | 'BANK_ACCOUNT') {
+    if (newValue !== oldValue && this.odinPayInstanceReady && !!this.odinPayInstance) {
+      this.log('DEBUG', `paymentMethodType changed from ${oldValue} to ${newValue}. Re-creating form.`);
+      // Reset flags to allow form re-creation
+      this.odinFormCreationAttempted = false;
+      this.odinFormRenderedBySDK = false;
+      // We need to trigger componentDidUpdate or directly call form creation logic.
+      // Setting a state that componentDidUpdate watches for, or directly calling.
+      // For now, let's re-set odinPayInstanceReady to false then true to re-trigger the componentDidUpdate logic safely
+      // This will also re-render the correct fields based on the new paymentMethodType
+      this.odinPayInstanceReady = false;
+      // Short timeout to allow Stencil to process the above state change and re-render if needed
+      setTimeout(() => {
+        this.odinPayInstanceReady = true;
+      }, 0);
+    }
+  }
+
+  private async reinitializeOdinPay() {
+    this.odinPayInstanceReady = false;
+    this.odinFormCreationAttempted = false;
+    this.odinFormRenderedBySDK = false;
+    this.odinPayInstance = null; // Clear old instance
+    this.initializationError = null;
+    await this.initializeOdinPayInstance();
   }
 
   private async _ensureOdinPayScriptLoaded(): Promise<void> {
@@ -350,7 +403,7 @@ export class ExerpOdinCcForm {
     } catch (error) {
       this.log('ERROR', 'Failed to load OdinPay.js script:', error);
       this.initializationError = 'Failed to load OdinPay.js SDK.'; // User-friendly message
-      // THROWING the error so the caller (initializeOdinPayAndForm) can catch and emit odinErrorInternal
+      // THROWING the error so the caller can catch and emit odinErrorInternal
       throw new Error(this.initializationError);
     }
   }
@@ -392,13 +445,15 @@ export class ExerpOdinCcForm {
     }
   }
 
-  private async initializeOdinPayAndForm() {
+  private async initializeOdinPayInstance() {
     this.isLoading = true;
     this.initializationError = null;
+    this.odinPayInstanceReady = false;
+    this.odinFormCreationAttempted = false;
     this.odinFormRenderedBySDK = false;
 
     if (!this.countryCode) {
-      const errorMsg = 'Internal Error: countryCode is missing in initializeOdinPayAndForm.';
+      const errorMsg = 'Internal Error: countryCode is missing in initializeOdinPayInstance.';
       this.log('ERROR', errorMsg);
       this.initializationError = errorMsg;
       this.odinErrorInternal.emit({ message: errorMsg, code: 'INIT_NO_COUNTRY_CODE_INTERNAL' });
@@ -410,8 +465,8 @@ export class ExerpOdinCcForm {
       await this._ensureOdinPayScriptLoaded();
       this._instantiateOdinPay(); // This will throw if OdinPay instantiation fails
 
-      // If instantiation was successful, proceed to create the form
-      this._createOdinPayForm();
+      this.odinPayInstanceReady = true; // Signal that the instance is ready
+      // Form creation will be triggered by componentDidUpdate
     } catch (error: any) {
       this.log('ERROR', 'RAW Error object during OdinPay initialization or script loading:', error);
       const errorMessage = error?.message || 'Failed to initialize OdinPay.';
