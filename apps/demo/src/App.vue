@@ -6,6 +6,7 @@ import {
   FieldCustomization,
   OdinSubmitPayload,
   type LogLevel,
+  type OdinFieldValidationEvent,
 } from "@exerp/odin-dropin";
 
 type DropinBillingFieldsConfig =
@@ -29,6 +30,7 @@ const paymentMethodId = ref<string | null>(null);
 const paymentResult = ref<OdinSubmitPayload | null>(null);
 const displayedError = ref<OdinPayErrorPayload | null>(null);
 let odinDropinInstance: OdinDropin | null = null; // To store the instance
+const lastValidationEvent = ref<OdinFieldValidationEvent | null>(null);
 
 const fieldConfigs = ref<
   Record<string, { enabled: boolean } & FieldCustomization>
@@ -123,11 +125,18 @@ const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
   return config;
 });
 
+function handleOnChangeValidation(event: OdinFieldValidationEvent) {
+  console.log("[Demo App] onChangeValidation event received:", event);
+  lastValidationEvent.value = event; // Store it for display
+  // We could add more logic here, e.g., to dynamically update UI based on event.isValid or event.errorCode
+}
+
 // --- Methods ---
 async function initializeAndMountDropin() {
   paymentMethodId.value = null;
   paymentResult.value = null;
   displayedError.value = null;
+  lastValidationEvent.value = null;
   console.log("[Demo App] Attempting to initialize Drop-in...");
 
   if (!odinPublicToken.value) {
@@ -202,6 +211,7 @@ async function initializeAndMountDropin() {
         paymentMethodId.value = null;
         paymentResult.value = null;
       },
+      onChangeValidation: handleOnChangeValidation,
     });
 
     // Pass the actual HTMLElement to mount
@@ -385,6 +395,11 @@ onMounted(() => {
           <div id="odin-dropin-container" ref="dropinContainerRef">
             <!-- The ODIN Drop-in will be mounted here -->
           </div>
+        </div>
+
+        <div class="validation-event-section results-section" v-if="lastValidationEvent">
+          <h2>Last Field Validation Event:</h2>
+          <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(lastValidationEvent, null, 2) }}</code></pre>
         </div>
 
         <div class="results-section">
@@ -935,4 +950,19 @@ label[for="enableNameField"] + input[type="checkbox"] {
 :deep(.odin-submit-container) {
   margin-top: 25px; /* More space above button */
 }
+
+.validation-event-section {
+  margin-top: 20px; /* Add some space above it */
+  border-top: 1px dashed #ccc; /* Differentiate from main results */
+  padding-top: 20px;
+}
+.validation-event-section h2 {
+  font-size: 1.1em;
+  color: #555;
+}
+.validation-event-section pre code {
+  background-color: #f0f0f0; /* Slightly different background */
+  border-color: #ddd;
+}
+
 </style>
