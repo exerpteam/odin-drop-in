@@ -39,14 +39,33 @@ Once linked, you can import components or functions exported from `@exerp/odin-d
 
 ```vue
 <script setup lang="ts">
-import { onMounted } from 'vue';
-// ⬇️ Import from the linked package
-import { OdinDropin } from '@exerp/odin-dropin';
-// 📝 Import types if needed
-import type { OdinPayErrorPayload } from '@exerp/odin-dropin';
+import { onMounted, ref } from 'vue';
+// ⬇️ Import from the linked package, including new types
+import {
+  OdinDropin,
+  type OdinPayErrorPayload,
+  type OdinSubmitPayload, // For onSubmit type
+  type OdinFieldValidationEvent, // For onChangeValidation
+  type OdinV2ThemeConfig    // For theme
+} from '@exerp/odin-dropin';
 
 const dropinContainerRef = ref<HTMLElement | null>(null);
 let odinDropinInstance: OdinDropin | null = null;
+
+// Example onChangeValidation handler
+const handleFieldValidation = (event: OdinFieldValidationEvent) => {
+  console.log('[Host App] onChangeValidation:', event.fieldName, 'isValid:', event.isValid, 'errorCode:', event.errorCode);
+};
+
+// Example theme
+const exampleTheme: OdinV2ThemeConfig = {
+  fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+  fontSize: '15px',
+  color: '#333',
+  '::placeholder': {
+    color: '#999'
+  }
+};
 
 onMounted(() => {
   console.log('Host component mounted.');
@@ -64,8 +83,18 @@ onMounted(() => {
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken,
       countryCode: countryCode,
-      onSubmit: (result) => { console.log('Result from Dropin onSubmit:', result); },
-      onError: (error: OdinPayErrorPayload) => { console.error('Error from Dropin onError:', error); }
+      paymentMethodType: 'CARD', // Or 'BANK_ACCOUNT'
+      // billingFieldsConfig: { name: true }, // Optional: example
+      theme: exampleTheme,
+      onChangeValidation: handleFieldValidation,
+      onSubmit: (result: OdinSubmitPayload) => {
+        console.log('Result from Dropin onSubmit:', result);
+        // Process result: result.paymentMethodId, result.paymentMethodType, result.details, etc.
+      },
+      onError: (error: OdinPayErrorPayload) => {
+        console.error('Error from Dropin onError:', error);
+        // Process error: error.code, error.message, error.fieldErrors
+      }
     });
 
     // ⬇️ Mount the drop-in
@@ -80,8 +109,13 @@ onMounted(() => {
 
 <template>
   <div>Host Application Component</div>
-  <!-- 📝 Later, you will mount the actual drop-in component here -->
-  <div id="dropin-mount-point" ref="dropinContainerRef"></div>
+  <div id="dropin-mount-point" ref="dropinContainerRef" style="max-width: 400px; margin: 20px; padding:15px; border: 1px solid #eee;">
+    <!-- Drop-in will mount here. 
+         Apply external CSS for borders/container styles as needed.
+         Example CSS for .odin-field-container:
+         .odin-field-container { border: 1px solid #ccc; border-radius: 4px; padding: 8px; margin-bottom: 10px; }
+    -->
+  </div>
 </template>
 ```
 
