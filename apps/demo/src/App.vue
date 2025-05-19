@@ -6,6 +6,8 @@ import {
   FieldCustomization,
   OdinSubmitPayload,
   type LogLevel,
+  type OdinFieldValidationEvent,
+  type OdinV2ThemeConfig,
 } from "@exerp/odin-dropin";
 
 type DropinBillingFieldsConfig =
@@ -22,14 +24,32 @@ const availableLogLevels: LogLevel[] = [
 // --- State ---
 const odinPublicToken = ref("");
 const countryCode = ref<"US" | "CA">("US");
-const paymentMethodType = ref<"CARD" | "ACH">("CARD");
-const isSingleUse = ref<boolean>(true);
+const paymentMethodType = ref<"CARD" | "BANK_ACCOUNT">("CARD");
 const selectedLogLevel = ref<LogLevel>("WARN");
 const dropinContainerRef = ref<HTMLElement | null>(null);
 const paymentMethodId = ref<string | null>(null);
 const paymentResult = ref<OdinSubmitPayload | null>(null);
 const displayedError = ref<OdinPayErrorPayload | null>(null);
 let odinDropinInstance: OdinDropin | null = null; // To store the instance
+
+const themeConfigString = ref(`{
+  "fontFamily": "Georgia, serif",
+  "fontSize": "15px",
+  "color": "#2c3e50",
+  "padding": "8px 10px",
+  "::placeholder": {
+    "color": "#bdc3c7"
+  },
+  ":hover": {
+    "color": "#e74c3c"
+  },
+  ":focus": {
+    "color": "#2980b9",
+    "backgroundColor": "#ecf0f1"
+  }
+}`); // Default example theme
+
+const lastValidationEvent = ref<OdinFieldValidationEvent | null>(null);
 
 const fieldConfigs = ref<
   Record<string, { enabled: boolean } & FieldCustomization>
@@ -40,12 +60,12 @@ const fieldConfigs = ref<
   // Initialize config for all fields we want to control
   // not putting all the fields here to avoid clutter
   name: { enabled: false, label: "", placeholder: "" },
-  // addressLine1: { enabled: false, label: "", placeholder: "" },
-  // addressLine2: { enabled: false, label: "", placeholder: "" },
-  // city: { enabled: false, label: "", placeholder: "" },
-  // state: { enabled: false, label: "", placeholder: "" },
-  // country: { enabled: false, label: "", placeholder: "" },
-  // emailAddress: { enabled: false, label: "", placeholder: "" },
+  addressLine1: { enabled: false, label: "", placeholder: "" },
+  addressLine2: { enabled: false, label: "", placeholder: "" },
+  city: { enabled: false, label: "", placeholder: "" },
+  state: { enabled: false, label: "", placeholder: "" },
+  country: { enabled: false, label: "", placeholder: "" },
+  emailAddress: { enabled: false, label: "", placeholder: "" },
   phoneNumber: { enabled: false, label: "", placeholder: "" },
 });
 
@@ -83,6 +103,28 @@ function getDefaultPlaceholder(
 function getDefaultLabel(fieldName: keyof typeof fieldConfigs.value): string {
   return DEFAULT_LABELS[fieldName] || fieldName;
 }
+
+const currentThemeConfig = computed((): OdinV2ThemeConfig | undefined => {
+  if (!themeConfigString.value.trim()) {
+    return undefined; // No theme if string is empty
+  }
+  try {
+    const parsed = JSON.parse(themeConfigString.value);
+    // Basic validation: ensure it's an object
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as OdinV2ThemeConfig;
+    }
+    console.warn("[Demo App] Invalid theme JSON structure. Must be an object.");
+    return undefined;
+  } catch (e) {
+    console.warn("[Demo App] Error parsing theme JSON:", e);
+    return undefined; // Invalid JSON, no theme
+  }
+});
 
 const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
   const config: DropinBillingFieldsConfig = {};
@@ -124,11 +166,18 @@ const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
   return config;
 });
 
+function handleOnChangeValidation(event: OdinFieldValidationEvent) {
+  console.log("[Demo App] onChangeValidation event received:", event);
+  lastValidationEvent.value = event; // Store it for display
+  // We could add more logic here, e.g., to dynamically update UI based on event.isValid or event.errorCode
+}
+
 // --- Methods ---
 async function initializeAndMountDropin() {
   paymentMethodId.value = null;
   paymentResult.value = null;
   displayedError.value = null;
+  lastValidationEvent.value = null;
   console.log("[Demo App] Attempting to initialize Drop-in...");
 
   if (!odinPublicToken.value) {
@@ -163,6 +212,9 @@ async function initializeAndMountDropin() {
 
   // Unmount previous instance if exists
   if (odinDropinInstance) {
+    console.log(
+      "[Demo App] Unmounting existing Drop-in instance before re-initializing..."
+    );
     odinDropinInstance.unmount();
     odinDropinInstance = null;
   }
@@ -172,16 +224,16 @@ async function initializeAndMountDropin() {
 
   try {
     console.log(
-      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, paymentMethodType: ${paymentMethodType.value}, isSingleUse: ${isSingleUse.value}`
+      `[Demo App] Initializing OdinDropin with token: ${odinPublicToken.value}, country: ${countryCode.value}, paymentMethodType: ${paymentMethodType.value}`
     );
     // Actual Drop-in Initialization Logic
     odinDropinInstance = new OdinDropin({
       odinPublicToken: odinPublicToken.value,
       countryCode: countryCode.value,
-      isSingleUse: isSingleUse.value,
       billingFieldsConfig: currentBillingFieldsConfig.value,
       logLevel: selectedLogLevel.value,
       paymentMethodType: paymentMethodType.value,
+      theme: currentThemeConfig.value,
       onSubmit: (result) => {
         console.log("[Demo App] onSubmit:", result);
         paymentMethodId.value = result.paymentMethodId;
@@ -193,9 +245,8 @@ async function initializeAndMountDropin() {
           result.paymentMethodType
         );
         if (result.paymentMethodType === "BANK_ACCOUNT" && result.details) {
-          // ⚠️ Note: Report says 'BANK_ACCOUNT', our type says 'ACH'. We need to align this. For now, let's assume our types are what we expect from the facade.
           const achDetails = result.details; // Will be AchPaymentMethodDetails
-          console.log("[Demo App] ACH Details:", achDetails);
+          console.log("[Demo App] BANK_ACCOUNT Details:", achDetails);
         }
       },
       onError: (error) => {
@@ -204,6 +255,7 @@ async function initializeAndMountDropin() {
         paymentMethodId.value = null;
         paymentResult.value = null;
       },
+      onChangeValidation: handleOnChangeValidation,
     });
 
     // Pass the actual HTMLElement to mount
@@ -219,6 +271,23 @@ async function initializeAndMountDropin() {
       code: "DEMO_INIT_EXCEPTION",
       message: `Failed to initialize Drop-in instance: ${error.message || error}`,
     };
+  }
+}
+
+function unmountDropin() {
+  if (odinDropinInstance) {
+    console.log("[Demo App] Unmounting Drop-in instance...");
+    odinDropinInstance.unmount();
+    // We might want to nullify the instance, but our re-init logic already handles it
+    // odinDropinInstance = null;
+    // Optionally clear results:
+    paymentMethodId.value = null;
+    paymentResult.value = null;
+    displayedError.value = null;
+    lastValidationEvent.value = null;
+    console.log("[Demo App] Drop-in unmounted by explicit call.");
+  } else {
+    console.log("[Demo App] No Drop-in instance to unmount.");
   }
 }
 
@@ -270,15 +339,11 @@ onMounted(() => {
             <input
               type="radio"
               id="pmtAch"
-              value="ACH"
+              value="BANK_ACCOUNT"
               v-model="paymentMethodType"
             />
-            <label for="pmtAch">ACH (Bank)</label>
+            <label for="pmtAch">Bank Account</label>
           </div>
-        </div>
-        <div class="checkbox-group">
-          <input id="isSingleUse" type="checkbox" v-model="isSingleUse" />
-          <label for="isSingleUse">Is Single Use</label>
         </div>
         <div>
           <label for="logLevelSelect">Log Level:</label>
@@ -292,6 +357,47 @@ onMounted(() => {
             </option>
           </select>
         </div>
+      </div>
+
+      <div class="global-config-row">
+        <div style="flex-basis: 100%">
+          <label for="themeConfigJson"
+            >Theme Configuration (JSON for OdinPay.js v2):</label
+          >
+          <textarea
+            id="themeConfigJson"
+            v-model="themeConfigString"
+            rows="10"
+            placeholder="Enter OdinPay.js v2 theme JSON here, or leave empty for default."
+            class="full-width-input"
+            style="font-family: monospace; font-size: 0.9em"
+          ></textarea>
+          <small
+            >Borders and structural styling (like overall background of inputs)
+            are NOT part of this theme object. Apply those via external CSS to
+            the #odin-dropin-container or its children if needed.</small
+          >
+        </div>
+      </div>
+
+      <div
+        class="global-actions-row"
+        style="
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        "
+      >
+        <button
+          @click="initializeAndMountDropin"
+          class="action-button init-button"
+        >
+          Initialize & Mount Drop-in
+        </button>
+        <button @click="unmountDropin" class="action-button unmount-button">
+          Unmount Drop-in
+        </button>
       </div>
     </div>
     <!-- END: Global Configuration Section -->
@@ -376,10 +482,6 @@ onMounted(() => {
               </div>
             </div>
           </template>
-
-          <button @click="initializeAndMountDropin" style="margin-top: 20px">
-            Initialize & Mount Drop-in
-          </button>
         </div>
         <!-- End of .config-section -->
       </div>
@@ -391,6 +493,14 @@ onMounted(() => {
           <div id="odin-dropin-container" ref="dropinContainerRef">
             <!-- The ODIN Drop-in will be mounted here -->
           </div>
+        </div>
+
+        <div
+          class="validation-event-section results-section"
+          v-if="lastValidationEvent"
+        >
+          <h2>Last Field Validation Event:</h2>
+          <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(lastValidationEvent, null, 2) }}</code></pre>
         </div>
 
         <div class="results-section">
@@ -434,7 +544,39 @@ onMounted(() => {
                   <pre><code style="white-space: pre-wrap;">{{ JSON.stringify(paymentResult.details.binDetails, null, 2) }}</code></pre>
                 </div>
               </div>
-              <!-- TODO: Add v-if for ACH details here in the future -->
+
+              <div
+                v-if="
+                  paymentResult?.paymentMethodType === 'BANK_ACCOUNT' &&
+                  paymentResult?.details
+                "
+              >
+                <h4>Bank Account Details:</h4>
+                <p v-if="paymentResult.details.bankAccountType">
+                  <strong>Account Type:</strong>
+                  <code>{{ paymentResult.details.bankAccountType }}</code>
+                </p>
+                <p v-if="paymentResult.details.accountNumberLast4">
+                  <strong>Account Last 4:</strong>
+                  <code>{{ paymentResult.details.accountNumberLast4 }}</code>
+                </p>
+                <p v-if="paymentResult.details.routingNumber">
+                  <strong>Routing Number (US):</strong>
+                  <code>{{ paymentResult.details.routingNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.transitNumber">
+                  <strong>Transit Number (CA):</strong>
+                  <code>{{ paymentResult.details.transitNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.institutionNumber">
+                  <strong>Institution Number (CA):</strong>
+                  <code>{{ paymentResult.details.institutionNumber }}</code>
+                </p>
+                <p v-if="paymentResult.details.country">
+                  <strong>Country:</strong>
+                  <code>{{ paymentResult.details.country }}</code>
+                </p>
+              </div>
             </div>
             <!-- END: Display New Payment Method Details -->
 
@@ -552,20 +694,30 @@ h1 {
   outline: none;
 }
 
-.config-section button {
-  padding: 11px 20px;
-  background-color: #48bb78; /* Nicer green */
-  color: white;
+.global-actions-row button.action-button {
+  padding: 10px 20px;
+  font-size: 1em;
+  font-weight: 500;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1em;
-  font-weight: 500;
   transition: background-color 0.2s;
 }
 
-.config-section button:hover {
+.global-actions-row button.init-button {
+  background-color: #48bb78; /* Green */
+  color: white;
+}
+.global-actions-row button.init-button:hover {
   background-color: #38a169; /* Darker green */
+}
+
+.global-actions-row button.unmount-button {
+  background-color: #e53e3e; /* Red */
+  color: white;
+}
+.global-actions-row button.unmount-button:hover {
+  background-color: #c53030; /* Darker red */
 }
 
 /* styles for field config layout */
@@ -941,4 +1093,89 @@ label[for="enableNameField"] + input[type="checkbox"] {
 :deep(.odin-submit-container) {
   margin-top: 25px; /* More space above button */
 }
+
+.validation-event-section {
+  margin-top: 20px; /* Add some space above it */
+  border-top: 1px dashed #ccc; /* Differentiate from main results */
+  padding-top: 20px;
+}
+.validation-event-section h2 {
+  font-size: 1.1em;
+  color: #555;
+}
+.validation-event-section pre code {
+  background-color: #f0f0f0;
+  border-color: #ddd;
+  display: block;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 10px;
+  border: 1px solid #c6f6d5; /* This was green, maybe should be neutral for this block */
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+.global-config-section textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin-bottom: 5px; /* Adjusted from 15px for inputs */
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 1em; /* Or adjust as needed */
+  line-height: 1.4;
+}
+.global-config-section textarea:focus {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+  outline: none;
+}
+.global-config-row small {
+  display: block;
+  font-size: 0.85em;
+  color: #718096; /* Slightly muted text */
+  margin-top: 5px;
+}
+
+/* START - Styles for OdinPay.js v2 Field Containers */
+/* Style the container that OUR component renders for each field group */
+:deep(.odin-field-container) {
+  border: 1px solid #ced4da; /* Default light grey border ON THE CONTAINER */
+  border-radius: 0.25rem; /* Standard border radius ON THE CONTAINER */
+  background-color: #ffffff; /* White background for the whole container area */
+  padding: 8px 10px; /* Padding INSIDE our container, around OdinPay's input div */
+  margin-bottom: 15px; /* Space between field containers */
+}
+
+/*
+  Now, for the .odin-input div (where OdinPay actually mounts its field),
+  we mostly want it to be transparent and fit naturally within our styled .odin-field-container.
+  OdinPay's theme will style the actual input element inside this.
+*/
+:deep(.odin-field-container .odin-input) {
+  background-color: transparent; /* Make OdinPay's direct container transparent */
+  /* Remove direct border/padding from here, as it's on .odin-field-container now */
+  /* border: none; */
+  /* padding: 0; */ /* Let OdinPay's theme handle internal padding of its actual input */
+  min-height: 38px; /* Or whatever min-height was working well from OdinPay's defaults */
+}
+
+/* Example: Style for when a field is potentially marked as invalid
+   (This would target the .odin-field-container)
+*/
+/*
+:deep(.odin-field-container.odin-field-invalid-container) {
+  border-color: #dc3545; // Red border for invalid
+  background-color: #fbeae
+}
+*/
+
+/* Styling the main drop-in container if needed */
+#odin-dropin-container {
+  /* background-color: #f8f9fa; */
+  /* padding: 15px; */
+}
+
+/* END Styles for OdinPay.js v2 Field Containers */
 </style>

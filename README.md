@@ -120,3 +120,7 @@ For detailed instructions on this workflow, please see [LOCAL_DEVELOPMENT_AND_PU
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Changelog
+
+See the [CHANGELOG](./packages/odin-dropin/CHANGELOG.md) for a detailed list of changes and updates to the project.

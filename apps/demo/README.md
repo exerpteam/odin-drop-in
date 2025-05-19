@@ -4,9 +4,14 @@ This application (`@exerp/odin-dropin-demo`) serves as a local development and t
 
 ## Purpose
 
-*   Provides a simple UI to initialize and mount the ODIN Drop-in component.
-*   Allows developers to visually inspect the rendered component.
-*   Facilitates interactive testing of the component's functionality (e.g., submitting card details, handling success/error callbacks).
+*   Provides a simple UI to initialize and mount the ODIN Drop-in component with various configurations.
+*   Allows developers to visually inspect the rendered component and its styling.
+*   Facilitates interactive testing of the component's functionality, including:
+    *   Submission of Card and Bank Account payment details.
+    *   Handling of success (`onSubmit`) and error (`onError`) callbacks, including detailed v2 error structures.
+    *   Real-time field validation feedback via the `onChangeValidation` callback.
+    *   Application of custom OdinPay.js v2 themes and external CSS for container styling.
+    *   Configuration of optional billing fields.
 *   Uses the local `@exerp/odin-dropin` package via pnpm workspaces, ensuring that changes made to the library packages are reflected here after rebuilding.
 
 <p align="center">
