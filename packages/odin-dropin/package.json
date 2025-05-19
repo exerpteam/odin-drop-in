@@ -1,6 +1,6 @@
 {
   "name": "@exerp/odin-dropin",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "ODIN Payment Drop-in Facade",
   "main": "./dist/odin-dropin.cjs.js",
   "module": "./dist/odin-dropin.es.js",
