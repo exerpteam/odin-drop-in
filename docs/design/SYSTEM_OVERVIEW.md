@@ -128,7 +128,7 @@ When the user interacts with the form and initiates a submission:
     *   Captures the payment details from its iframes.
     *   Communicates with ODIN servers to tokenize the payment information.
     *   Invokes the callback function provided to `createCardForm()`'s or `createBankAccountForm()`'s `submitButton.callback` option, passing a `result` object.
-        *   If successful (`result.success === true`), `result.paymentMethod` contains details like `id`, `type` ("CREDIT_CARD" or "BANK_ACCOUNT"), `createdAt`, `updatedAt`, `billingInformation`, and payment method-specific fields (e.g., `cardBrand`, masked `accountNumber`, `expirationDate` for cards; or `bankAccountType`, masked `accountNumber`, `routingNumber`, etc., for bank accounts).
+        *   If successful (`result.success === true`), `result.paymentMethod` contains details like `id`, `type` ("CREDIT_CARD", "DEBIT_CARD" or "BANK_ACCOUNT"), `createdAt`, `updatedAt`, `billingInformation`, and payment method-specific fields (e.g., `cardBrand`, masked `accountNumber`, `expirationDate` for cards; or `bankAccountType`, masked `accountNumber`, `routingNumber`, etc., for bank accounts).
         *   If unsuccessful (`result.success === false`), the `result` object will typically contain an `errors` array detailing the issues.
 4.  **Core Package (`<exerp-odin-cc-form>` component - OdinPay Callback):**
     *   The internal callback function within the core component receives the `result` object from `OdinPay.js`.
