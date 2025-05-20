@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-05-20
+
+### Fixed
+
+-   Ensured that when OdinPay.js v2 tokenizes a debit card (returning `type: "DEBIT_CARD"`), the `@exerp/odin-dropin` component correctly processes it as a successful card payment. The `OdinSubmitPayload` emitted to the host application will have `paymentMethodType: 'CARD'` and include all relevant card details, preventing a previous "Unknown payment method type" error for this scenario.
+
 ## [2.0.0] - 2025-05-19
 
 This is a major release introducing compatibility with OdinPay.js v2 (JS Elements) and includes significant new features and breaking changes.

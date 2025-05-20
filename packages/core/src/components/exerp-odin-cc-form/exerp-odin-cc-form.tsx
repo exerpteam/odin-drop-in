@@ -764,8 +764,7 @@ export class ExerpOdinCcForm {
     let specificDetails: PaymentMethodSpecificDetails | undefined = undefined;
     let submitPayloadType: 'CARD' | 'BANK_ACCOUNT'; // This will be strictly set
 
-    if (paymentMethodTypeFromOdin === 'CREDIT_CARD') {
-      // OdinPay.js v2 often uses "CREDIT_CARD"
+    if (paymentMethodTypeFromOdin === 'CREDIT_CARD' || paymentMethodTypeFromOdin === 'DEBIT_CARD') {
       submitPayloadType = 'CARD';
       const cardDetails: CardPaymentMethodDetails = {};
       if (odinPayPM.cardBrand) cardDetails.cardBrand = odinPayPM.cardBrand;
@@ -781,7 +780,7 @@ export class ExerpOdinCcForm {
       if (odinPayPM.expirationDate) cardDetails.expirationDate = odinPayPM.expirationDate;
       if (odinPayPM.binDetails) cardDetails.binDetails = odinPayPM.binDetails;
       specificDetails = cardDetails;
-      this.log('DEBUG', '[Core] Extracted CARD details for submit payload:', JSON.stringify(specificDetails, null, 2));
+      this.log('DEBUG', `[Core] Extracted ${paymentMethodTypeFromOdin} details (as CARD) for submit payload:`, JSON.stringify(specificDetails, null, 2));
     } else if (paymentMethodTypeFromOdin === 'BANK_ACCOUNT') {
       submitPayloadType = 'BANK_ACCOUNT';
       const achDetails: AchPaymentMethodDetails = {};
@@ -817,7 +816,6 @@ export class ExerpOdinCcForm {
       billingInformation: billingInfo,
       details: specificDetails,
     };
-    // Optionally add createdAt, updatedAt if desired and present in odinPayPM
     // if (odinPayPM.createdAt) (submitPayload as any).createdAt = odinPayPM.createdAt;
     // if (odinPayPM.updatedAt) (submitPayload as any).updatedAt = odinPayPM.updatedAt;
 
