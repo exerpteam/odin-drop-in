@@ -48,5 +48,8 @@
     "jest-cli": "^29.7.0",
     "puppeteer": "^24.3.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@clubessentialholdings/js-elements": "^2.0.2"
+  }
 }

@@ -1,11 +1,9 @@
+import OdinPay from '@clubessentialholdings/js-elements';
 import { Component, h, Prop, State, Watch, Event, EventEmitter } from '@stencil/core';
 
 type LogLevel = 'NONE' | 'ERROR' | 'WARN' | 'INFO' | 'DEBUG';
 const DEFAULT_CORE_LOG_LEVEL: LogLevel = 'WARN';
 
-// Declare OdinPay at the module level for type safety if we create a .d.ts file for it
-//    or use 'any' for now.
-declare const OdinPay: any;
 
 // Details specific to a Card payment method
 export interface CardPaymentMethodDetails {
@@ -207,7 +205,6 @@ export class ExerpOdinCcForm {
   @Prop() onChangeValidation?: (event: any) => void; // Using 'any' for now, facade ensures correct type
 
   @State() private odinPayInstance: any = null;
-  @State() private scriptLoaded: boolean = false;
   @State() private initializationError: string | null = null;
   @State() private isLoading: boolean = false;
   @State() private odinFormRenderedBySDK: boolean = false;
@@ -273,22 +270,6 @@ export class ExerpOdinCcForm {
     const customPlaceholder = this.getFieldCustomization(fieldName)?.placeholder;
     // Return custom placeholder, default placeholder, or undefined if neither exists
     return customPlaceholder ?? DEFAULT_FIELD_TEXT[fieldName]?.placeholder ?? undefined;
-  }
-
-  private loadScript(url: string, id: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (document.getElementById(id)) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = url;
-      script.id = id;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
-      document.head.appendChild(script);
-    });
   }
 
   async componentDidLoad() {
@@ -392,28 +373,13 @@ export class ExerpOdinCcForm {
     await this.initializeOdinPayInstance();
   }
 
-  private async _ensureOdinPayScriptLoaded(): Promise<void> {
-    if (this.scriptLoaded) {
-      return;
-    }
-    try {
-      await this.loadScript('https://js.odin-dev.com', 'odin-pay-sdk'); // TODO: Update to production v2 URL (e.g., https://js.odinpay.net or specific v2.x.x) when live
-      this.scriptLoaded = true;
-      this.log('INFO', 'OdinPay.js script loaded.');
-    } catch (error) {
-      this.log('ERROR', 'Failed to load OdinPay.js script:', error);
-      this.initializationError = 'Failed to load OdinPay.js SDK.'; // User-friendly message
-      // THROWING the error so the caller can catch and emit odinErrorInternal
-      throw new Error(this.initializationError);
-    }
-  }
 
   // private method to handle OdinPay instantiation
   private _instantiateOdinPay(): void {
-    if (typeof OdinPay === 'undefined') {
-      this.initializationError = 'OdinPay SDK is not available even after script load.';
-      this.log('ERROR', this.initializationError);
-      throw new Error(this.initializationError);
+
+    if (typeof this.odinPublicToken !== 'string' || !this.odinPublicToken.trim()) {
+      this.log('ERROR', 'OdinPay() was not called because odinPublicToken is undefined or empty.');
+      throw new Error('No key provided'); // Mimicking OdinPay.js's own error message for missing token
     }
 
     let effectiveTheme: any; // Use 'any' for flexibility or define a core-specific type
@@ -462,23 +428,18 @@ export class ExerpOdinCcForm {
     }
 
     try {
-      await this._ensureOdinPayScriptLoaded();
       this._instantiateOdinPay(); // This will throw if OdinPay instantiation fails
 
       this.odinPayInstanceReady = true; // Signal that the instance is ready
       // Form creation will be triggered by componentDidUpdate
     } catch (error: any) {
-      this.log('ERROR', 'RAW Error object during OdinPay initialization or script loading:', error);
+      this.log('ERROR', 'RAW Error object during OdinPay initialization:', error);
       const errorMessage = error?.message || 'Failed to initialize OdinPay.';
       this.log('ERROR', 'Error message during OdinPay initialization:', errorMessage);
       this.initializationError = errorMessage;
 
       let specificErrorCode = 'INITIALIZATION_ERROR';
-      if (errorMessage === 'Failed to load OdinPay.js SDK.') {
-        specificErrorCode = 'SDK_LOAD_ERROR';
-      } else if (errorMessage === 'OdinPay SDK is not available even after script load.') {
-        specificErrorCode = 'SDK_NOT_DEFINED_ERROR'; // More specific than SDK_LOAD_ERROR for this case
-      } else if (errorMessage === 'No key provided') {
+      if (errorMessage === 'No key provided') {
         specificErrorCode = 'INIT_NO_KEY_PROVIDED';
       } else if (errorMessage === 'Badly formatted key') {
         specificErrorCode = 'INIT_BADLY_FORMATTED_KEY';
@@ -488,7 +449,9 @@ export class ExerpOdinCcForm {
         specificErrorCode = 'INIT_UNSUPPORTED_COUNTRY';
       } else if (errorMessage.includes('BasisTheoryElements') || errorMessage.includes('Elements script') || errorMessage.includes('API key is required')) {
         specificErrorCode = 'INIT_BT_SDK_FAILURE';
-      }
+      } else if (errorMessage.includes('OdinPay is not defined') || errorMessage.includes('OdinPay is not a function')) {
+        specificErrorCode = 'NPM_IMPORT_FAILED';
+     }
 
       const errorPayload: OdinPayErrorPayload = {
         code: specificErrorCode,
