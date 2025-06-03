@@ -1,5 +1,6 @@
 <p align="left">
-  <a href="../../README.md">↩️ Workspace README</a>
+  <a href="../../README.md"> 📃 Workspace README</a> -
+  <a href="./CHANGELOG.md"> 📄 Changelog</a>
 </p>
 
 ---

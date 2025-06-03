@@ -37,7 +37,7 @@ The ODIN Drop-in workspace is a monorepo containing several key packages that wo
 *   **Purpose:** This internal package provides the fundamental building block(s) for the payment UI. It is not intended for direct consumption by host applications.
 *   **Key Component(s):**
     *   `<exerp-odin-cc-form>`: The primary web component responsible for payment detail capture. It can render forms for both Credit Card and Bank Account payments based on configuration.
-    *   Dynamically loading and initializing ODIN's `OdinPay.js` v2 library.
+    *   Importing and initializing ODIN's `OdinPay.js` v2 library from the `@clubessentialholdings/js-elements` NPM package.
     *   Initializing the `OdinPay` object using the `odinPublicToken` and a theme object. The theme is either passed down from the facade (originating from the host application's configuration) or defaults to an empty object (`{}`) to allow OdinPay.js v2's native styles to apply.
     *   Configuring and rendering the payment input fields for both Card and Bank Account types using `OdinPay.createCardForm()` or `OdinPay.createBankAccountForm()`. This includes:
         *   Providing CSS selectors for where OdinPay.js should mount its iframe-based input fields.
@@ -102,7 +102,7 @@ The process of initializing and displaying the ODIN Drop-in component typically 
     *   The web component is appended to the specified DOM mount point.
 4.  **Core Package (`@exerp/odin-dropin-core` - `<exerp-odin-cc-form>` component):**
     *   The component's lifecycle methods (e.g., `componentDidLoad`, `componentDidUpdate`, and `@Watch`ers for key props like `odinPublicToken`, `countryCode`, `paymentMethodType`) manage the initialization sequence.
-    *   It dynamically loads the external `OdinPay.js` v2 script if not already loaded.
+    *   It utilizes the `OdinPay` constructor imported from the `@clubessentialholdings/js-elements` NPM package.
     *   It initializes the `OdinPay` object using the `odinPublicToken` and the `theme` object passed as a prop from the facade (or an empty object `{}` if no theme was provided, to use OdinPay.js v2 defaults).
     *   Once the `OdinPay` instance is ready and the component has rendered, it calls `OdinPay.createCardForm()` or `OdinPay.createBankAccountForm()` based on its `paymentMethodType` prop. These methods are provided with:
         *   CSS selectors for the DOM elements (rendered by the core component) where OdinPay.js should mount its input fields.
