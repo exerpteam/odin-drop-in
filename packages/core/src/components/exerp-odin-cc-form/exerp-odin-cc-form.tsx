@@ -970,7 +970,7 @@ export class ExerpOdinCcForm {
           {this.isLoading ? 'Loading...' : 'Pay'}
         </button>
         <button id={odinHiddenSubmitButtonId} type="button" style={{ display: 'none' }} aria-hidden="true"></button>
-        <div class="odin-form-footer">Secured by ODIN Pay</div>
+        <div class="odin-form-footer">Secured by Exerp Pay</div>
       </div>
     );
   }
@@ -1032,12 +1032,6 @@ export class ExerpOdinCcForm {
           <div id={this.getFieldId('accountHolderName')} class="odin-input"></div>
         </div>
 
-        {/* Account Number */}
-        <div class="odin-field-container" key="accountNumber">
-          <label htmlFor={this.getFieldId('accountNumber')}>{this.getLabel('accountNumber' as any)}</label>
-          <div id={this.getFieldId('accountNumber')} class="odin-input"></div>
-        </div>
-
         {/* Bank Account Type */}
         <div class="odin-field-container" key="bankAccountType">
           <label htmlFor={bankAccountTypeFieldId}>{this.getLabel('bankAccountType' as any)}</label>
@@ -1068,6 +1062,12 @@ export class ExerpOdinCcForm {
             </div>
           </span>
         )}
+
+        {/* Account Number */}
+        <div class="odin-field-container" key="accountNumber">
+          <label htmlFor={this.getFieldId('accountNumber')}>{this.getLabel('accountNumber' as any)}</label>
+          <div id={this.getFieldId('accountNumber')} class="odin-input"></div>
+        </div>
 
         {optionalAchBillingFieldRenderOrder.map(fieldName => this.renderBillingField(fieldName, false))}
       </div>
