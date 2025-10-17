@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2025-10-17
+
+### Changed
+
+- Reordered the ACH (Bank Account) form fields to a more intuitive flow (Account Holder Name, Account Type, Routing Number, Account Number).
+- Updated the form footer text from 'Secured by ODIN Pay' to 'Secured by Exerp Pay' for brand alignment.
+
 ## [2.0.2] - 2025-05-04
 
 ### Changed
