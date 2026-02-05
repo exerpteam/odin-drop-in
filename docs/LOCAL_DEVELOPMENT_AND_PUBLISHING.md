@@ -12,7 +12,9 @@ This guide explains how to link and use the `@exerp/odin-dropin` package from th
 
 ## Linking the Drop-in Package Locally
 
-To make your local `@exerp/odin-dropin` available in your other project (let's call it the "host project"), use `pnpm add` with the local path to the package.
+To make your local `@exerp/odin-dropin` available in your other project (let's call it the "host project"), you'll need to add it using the host project's package manager with a local path.
+
+> **Important:** Use the same package manager that your host project uses. For example, `webapp-standard/frontend` uses **yarn**, so you must use yarn commands there (not pnpm).
 
 1.  **Navigate to your host project's directory:**
     ```bash
@@ -22,9 +24,23 @@ To make your local `@exerp/odin-dropin` available in your other project (let's c
 
 2.  **Add the local drop-in package using its path:**
     It's recommended to use the **absolute path** to the `packages/odin-dropin` directory within your workspace.
+
+    **For yarn projects** (e.g., `webapp-standard/frontend`):
+    ```bash
+    # Replace the path with the actual path on your machine
+    yarn add link:/Users/username/dev/exerp/odin-dropin-workspace/packages/odin-dropin
+    ```
+
+    **For pnpm projects:**
     ```bash
     # Replace the path with the actual path on your machine
     pnpm add /Users/username/dev/exerp/odin-dropin-workspace/packages/odin-dropin
+    ```
+
+    **For npm projects:**
+    ```bash
+    # Replace the path with the actual path on your machine
+    npm install /Users/username/dev/exerp/odin-dropin-workspace/packages/odin-dropin
     ```
 
     This command will:
@@ -130,18 +146,25 @@ pnpm turbo build --filter @exerp/odin-dropin
 
 ## Unlinking
 
-If you want to remove the local link and install a published version (once available), first remove the linked dependency:
+If you want to remove the local link and install a published version, first remove the linked dependency using your host project's package manager:
 
+**For yarn projects:**
 ```bash
 # Run from the host project directory (e.g., webapp-standard/frontend)
-pnpm remove @exerp/odin-dropin
+yarn remove @exerp/odin-dropin
+yarn add @exerp/odin-dropin@latest
 ```
 
-Then you can install normally:
-
+**For pnpm projects:**
 ```bash
-# Example (after publishing)
-# pnpm add @exerp/odin-dropin@latest
+pnpm remove @exerp/odin-dropin
+pnpm add @exerp/odin-dropin@latest
+```
+
+**For npm projects:**
+```bash
+npm uninstall @exerp/odin-dropin
+npm install @exerp/odin-dropin@latest
 ```
 
 ## Iterating on Changes and Testing
@@ -150,7 +173,9 @@ When you make changes to the ODIN Drop-in source code within the `odin-dropin-wo
 
 ### Testing in an External Host Project (e.g., `webapp-standard`)
 
-This is the primary workflow when using `pnpm add /path/to/package` (local linking) with an external application like `webapp-standard/frontend` that uses `yarn serve` (or a similar Vite/Webpack dev server).
+This is the primary workflow when using local linking with an external application like `webapp-standard/frontend`.
+
+> **Note:** The `webapp-standard/frontend` project uses **yarn** as its package manager. Use `yarn add link:/path/to/package` to link the local drop-in package (see [Linking the Drop-in Package Locally](#linking-the-drop-in-package-locally) above).
 
 1.  **Make Code Changes:**
     *   Modify files in `odin-dropin-workspace/packages/core/src/...` for the Stencil web components.
