@@ -59,14 +59,14 @@ const fieldConfigs = ref<
   cardInformation: { enabled: true, label: "", placeholder: "" },
   // Initialize config for all fields we want to control
   // not putting all the fields here to avoid clutter
-  name: { enabled: false, label: "", placeholder: "" },
-  addressLine1: { enabled: false, label: "", placeholder: "" },
-  addressLine2: { enabled: false, label: "", placeholder: "" },
-  city: { enabled: false, label: "", placeholder: "" },
-  state: { enabled: false, label: "", placeholder: "" },
-  country: { enabled: false, label: "", placeholder: "" },
-  emailAddress: { enabled: false, label: "", placeholder: "" },
-  phoneNumber: { enabled: false, label: "", placeholder: "" },
+  name: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  addressLine1: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  addressLine2: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  city: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  state: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  country: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  emailAddress: { enabled: false, label: "", placeholder: "", initialValue: "" },
+  phoneNumber: { enabled: false, label: "", placeholder: "", initialValue: "" },
 });
 
 const DEFAULT_PLACEHOLDERS: Record<string, string> = {
@@ -135,11 +135,12 @@ const currentBillingFieldsConfig = computed((): DropinBillingFieldsConfig => {
     if (fieldName !== "postalCode" && fieldName !== "cardInformation") {
       if (fieldConf.enabled) {
         // If enabled, check if there's customization
-        if (fieldConf.label || fieldConf.placeholder) {
+        if (fieldConf.label || fieldConf.placeholder || fieldConf.initialValue) {
           // Pass customization object
           config[fieldName] = {
             label: fieldConf.label || undefined, // Pass undefined if empty string
             placeholder: fieldConf.placeholder || undefined, // Pass undefined if empty string
+            initialValue: fieldConf.initialValue || undefined, // Pass undefined if empty string
           };
         } else {
           // Pass true for default behavior
@@ -478,6 +479,22 @@ onMounted(() => {
                     fieldName !== 'cardInformation' &&
                     !fieldData.enabled
                   "
+                />
+              </div>
+
+              <div
+                class="field-config-row"
+                v-if="
+                  fieldName !== 'postalCode' && fieldName !== 'cardInformation'
+                "
+              >
+                <label :for="`initialValue-${fieldName}`">Initial Value:</label>
+                <input
+                  type="text"
+                  :id="`initialValue-${fieldName}`"
+                  v-model="fieldData.initialValue"
+                  placeholder="Optional prefill"
+                  :disabled="!fieldData.enabled"
                 />
               </div>
             </div>

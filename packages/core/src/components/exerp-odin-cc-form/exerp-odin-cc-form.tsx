@@ -67,6 +67,7 @@ export type BillingFieldsConfig = {
 export interface FieldCustomization {
   label?: string;
   placeholder?: string;
+  initialValue?: string;
 }
 
 // Define the names of fields that can be optionally shown/customized
@@ -141,13 +142,14 @@ export class ExerpOdinCcForm {
   /**
    * Optional configuration to enable and customize billing fields.
    * This object determines which optional billing fields are rendered and allows
-   * overriding their default labels and placeholders.
+   * overriding their default labels, placeholders, and initial values.
    *
    * - For optional fields (e.g., `name`, `addressLine1`):
    *   - `true`: Enables the field with default label and placeholder.
-   *   - `FieldCustomization` object (e.g., `{ label?: 'Custom Label', placeholder?: 'Custom Hint' }`):
+   *   - `FieldCustomization` object (e.g., `{ label?: 'Custom Label', placeholder?: 'Custom Hint', initialValue?: '123 Main St' }`):
    *     Enables the field and applies the specified customizations.
    *   - If a field key is omitted, the field is not rendered.
+   *   - `initialValue` is only supported for optional fields.
    *
    * - For fields that are always structurally part of the form but can be customized
    *   (e.g., `postalCode` label/placeholder, `cardInformation` label):
@@ -156,7 +158,7 @@ export class ExerpOdinCcForm {
    * Example:
    * `{
    *   name: true, // Enable 'Name on Card' with defaults
-   *   addressLine1: { label: 'Street Address Line 1' }, // Custom label for address
+   *   addressLine1: { label: 'Street Address Line 1', initialValue: '123 Main St' }, // Custom label + prefill
    *   city: { placeholder: 'Enter your city here' }, // Custom placeholder for city
    *   postalCode: { label: 'Zip/Postal' } // Custom label for postal code
    * }`
@@ -270,6 +272,12 @@ export class ExerpOdinCcForm {
     const customPlaceholder = this.getFieldCustomization(fieldName)?.placeholder;
     // Return custom placeholder, default placeholder, or undefined if neither exists
     return customPlaceholder ?? DEFAULT_FIELD_TEXT[fieldName]?.placeholder ?? undefined;
+  }
+
+  /** Helper to get the initial value for a field */
+  private getInitialValue(fieldName: keyof BillingFieldsConfig): string | undefined {
+    const customInitialValue = this.getFieldCustomization(fieldName)?.initialValue;
+    return customInitialValue ?? undefined;
   }
 
   async componentDidLoad() {
@@ -498,6 +506,7 @@ export class ExerpOdinCcForm {
         odinPayFields[fieldName] = {
           selector: optionalFieldMapping[fieldName],
           placeholder: this.getPlaceholder(fieldName),
+          initialValue: this.getInitialValue(fieldName),
         };
       }
     }
@@ -645,7 +654,6 @@ export class ExerpOdinCcForm {
         // This is 'Account Holder Name'
         selector: this.getFieldId('accountHolderName'),
         placeholder: this.getPlaceholder('name'), // Assumes 'name' key in DEFAULT_FIELD_TEXT is "Account Holder Name" when paymentMethodType is BANK_ACCOUNT, or user customizes
-        // initialValue: this.billingFieldsConfig?.name?.initialValue // if supporting initial values
       },
     };
 
@@ -674,7 +682,7 @@ export class ExerpOdinCcForm {
         fields[fieldKey] = {
           selector: this.getFieldId(fieldKey), // Ensure your renderAchFields creates these IDs
           placeholder: this.getPlaceholder(fieldKey),
-          // initialValue: this.billingFieldsConfig?.[fieldKey]?.initialValue // if supporting initial values
+          initialValue: this.getInitialValue(fieldKey),
         };
       }
     });
